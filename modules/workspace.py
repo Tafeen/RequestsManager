@@ -1,7 +1,7 @@
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QLabel, QPushButton, QGridLayout,
-                               QWidget, QComboBox, QMenuBar)
+                               QWidget, QComboBox)
 
 
 class RequestAdvancedEditingWidget(QWidget):
@@ -27,9 +27,18 @@ class RequestWorkspaceWidget(QWidget):
     def __init__(self, parent):
         super(RequestWorkspaceWidget, self).__init__(parent)
 
-        # Request name
+        # Request ID
+        self.requestId = None
+
+        # Request overall information
         self.requestName = QLineEdit()
         self.requestName.setPlaceholderText("Request name")
+        self.requestLastModificationDate = QLabel("Just a while ago")
+
+        self.informationQHBoxLayout = QHBoxLayout()
+        self.informationQHBoxLayout.addWidget(self.requestName)
+        self.informationQHBoxLayout.addWidget(
+            self.requestLastModificationDate)
 
         # Request type
         TYPE_OPTIONS = (
@@ -60,13 +69,15 @@ class RequestWorkspaceWidget(QWidget):
         self.endpointQVBoxLayout.addWidget(self.requestEndpoint)
 
         self.allQGridLayout = QGridLayout()
-        self.allQGridLayout.addWidget(self.requestName, 0, 0, 1, 0)
-        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 1, 0, 1, 0)
-        self.allQGridLayout.addWidget(self.RequestAdvancedEditing, 2, 0, 1, 0)
+        self.allQGridLayout.addLayout(
+            self.informationQHBoxLayout, 0, 0, 0, 3, Qt.AlignTop)
+        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 1, 0)
         self.allQGridLayout.addWidget(
-            self.addRequestToList, 3, 2, Qt.AlignBottom)
+            self.RequestAdvancedEditing, 2, 0, 1, 0, Qt.AlignVCenter)
         self.allQGridLayout.addWidget(
-            self.sendRequest, 3, 1, Qt.AlignBottom)
+            self.addRequestToList, 4, 3, Qt.AlignBottom)
+        self.allQGridLayout.addWidget(
+            self.sendRequest, 4, 2, Qt.AlignBottom)
 
         self.setLayout(self.allQGridLayout)
 

@@ -11,7 +11,6 @@ def saveRequest(request):
     request["lastModificationDate"] = datetime.datetime.utcnow().strftime(
         '%Y-%m-%dT%H:%M:%SZ')
     lastId = 0
-
     # Check if file exists and is array
     try:
         with open(fileName, 'r', encoding='utf-8') as f:
@@ -38,6 +37,7 @@ def saveRequest(request):
         if(not isFileCorrupted):
             with open(fileName, 'w+', encoding='utf-8') as f:
                 json.dump(requestsList, f, ensure_ascii=False, indent=4)
+        return(request["id"])
 
 
 def loadRequests():
