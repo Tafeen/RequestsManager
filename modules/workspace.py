@@ -83,4 +83,4 @@ class RequestWorkspaceWidget(QWidget):
 
         self.requestName.textChanged[str].connect(parent.check_disable)
         self.requestEndpoint.textChanged[str].connect(parent.check_disable)
-        self.addRequestToList.clicked.connect(parent.add_request)
+        self.addRequestToList.clicked.connect(parent.guiSaveRequest)
