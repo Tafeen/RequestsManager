@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QWidget, QPushButton)
 from modules.workspace import RequestWorkspaceWidget
 from modules.requestItem import RequestInListWidget
-from utils.fileOperations import loadRequests, saveRequest
+from utils.fileOperations import loadRequests, saveRequest, removeRequest
 
 
 class RequestsMainWidget(QWidget):
@@ -12,6 +12,7 @@ class RequestsMainWidget(QWidget):
         QWidget.__init__(self)
 
         self._data = loadRequests()
+        self.ROW_TO_DATA = []
 
         # LEFT - LIST LAYOUT
         self.requestsListLayout = QGridLayout()
@@ -88,6 +89,7 @@ class RequestsMainWidget(QWidget):
             self.requestWorkspaceWidget.requestLastModificationDate.setText(
                 "Just a while ago")
             self._data = loadRequests()
+            self.ROW_TO_DATA.append(requestId)
         else:
             selectedRow = self.currentSelectedRequest
 
@@ -140,12 +142,14 @@ class RequestsMainWidget(QWidget):
         return({"RequestsQListWidgetItem": RequestsQListWidgetItem,
                 "newRequestInListWidget": newRequestInListWidget})
 
-    def removeSelectedRequests(self):
+    def guiDeleteRequest(self):
         listItems = self.requestsListWidget.selectedItems()
         if not listItems:
             return
         for item in listItems:
             self.requestsListWidget.takeItem(self.requestsListWidget.row(item))
+            removeRequest(self.ROW_TO_DATA[self.currentSelectedRequest-1])
+            del self.ROW_TO_DATA[self.currentSelectedRequest-1]
 
     def removeCurrentSelection(self):
         # Clear all inputs
@@ -163,11 +167,11 @@ class RequestsMainWidget(QWidget):
             self.requestsListWidget.setItemWidget(
                 requestItem["RequestsQListWidgetItem"],
                 requestItem["newRequestInListWidget"])
+            self.ROW_TO_DATA.append(request["id"])
 
     def onRowChanged(self, current, previous):
         self.currentSelectedRequest = current.row()
-        selectedRequestObj = self._data[current.row()]
-
+        selectedRequestObj = next(request for request in self._data if request["id"] == self.ROW_TO_DATA[self.currentSelectedRequest])
         # Clear all inputs
         self.clearWorkspaceInputs()
 
@@ -182,9 +186,9 @@ class RequestsMainWidget(QWidget):
             selectedRequestObj["endpoint"])
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             selectedRequestObj["body"])
-        self.requestWorkspaceWidget.requestId = self._data[current.row()]["id"]
+        self.requestWorkspaceWidget.requestId = selectedRequestObj["id"]
 
-        self.requestWorkspaceWidget.addRequestToList.setText("Update request")
+        self.requestWorkspaceWidget.saveRequestInList.setText("Update request")
 
     def clearWorkspaceInputs(self):
         self.requestWorkspaceWidget.requestName.setText("")
@@ -193,14 +197,16 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestEndpoint.setText("")
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             "")
-        self.requestWorkspaceWidget.addRequestToList.setText("Save request")
+        self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
 
-    def check_disable(self, s):
+    def checkDisableSaveAndDelete(self, s):
         if (not self.requestWorkspaceWidget.requestName.text() or
                 not self.requestWorkspaceWidget.requestEndpoint.text()):
-            self.requestWorkspaceWidget.addRequestToList.setEnabled(False)
+            self.requestWorkspaceWidget.saveRequestInList.setEnabled(False)
+            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(False)
         else:
-            self.requestWorkspaceWidget.addRequestToList.setEnabled(True)
+            self.requestWorkspaceWidget.saveRequestInList.setEnabled(True)
+            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(True)
 
 
 class MainWindow(QMainWindow):

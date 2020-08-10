@@ -40,6 +40,24 @@ def saveRequest(request):
         return(request["id"])
 
 
+def removeRequest(requestId):
+    requestsList = []
+    try:
+        with open(fileName, 'r', encoding='utf-8') as f:
+            try:
+                requestsList = json.load(f)
+                requestsList = list(
+                    filter(lambda i: i['id'] != requestId, requestsList))
+            except Exception as ex:
+                print(ex)
+    except Exception as ex:
+        print(ex)
+    finally:
+        with open(fileName, 'w', encoding='utf-8') as f:
+            json.dump(requestsList, f, ensure_ascii=False, indent=4)
+        return requestsList
+
+
 def loadRequests():
     requestsList = []
 

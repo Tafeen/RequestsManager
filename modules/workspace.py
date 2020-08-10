@@ -56,10 +56,12 @@ class RequestWorkspaceWidget(QWidget):
         self.requestEndpoint = QLineEdit()
         self.requestEndpoint.setPlaceholderText("Request endpoint")
 
-        # Request 'request button' with disabling until filled inputs
-        self.addRequestToList = QPushButton("Save request")
+        # Request 'request button' with disabling
+        self.saveRequestInList = QPushButton("Save request")
         self.sendRequest = QPushButton("Send Request")
-        self.addRequestToList.setEnabled(False)
+        self.deleteRequestFromList = QPushButton("Delete Request")
+        self.saveRequestInList.setEnabled(False)
+        self.deleteRequestFromList.setEnabled(False)
 
         # Set request editing widget
         self.RequestAdvancedEditing = RequestAdvancedEditingWidget(self)
@@ -75,12 +77,15 @@ class RequestWorkspaceWidget(QWidget):
         self.allQGridLayout.addWidget(
             self.RequestAdvancedEditing, 2, 0, 1, 0, Qt.AlignVCenter)
         self.allQGridLayout.addWidget(
-            self.addRequestToList, 4, 3, Qt.AlignBottom)
+            self.sendRequest, 4, 1, Qt.AlignBottom)
         self.allQGridLayout.addWidget(
-            self.sendRequest, 4, 2, Qt.AlignBottom)
+            self.saveRequestInList, 4, 2, Qt.AlignBottom)
+        self.allQGridLayout.addWidget(
+            self.deleteRequestFromList, 4, 3, Qt.AlignBottom)
 
         self.setLayout(self.allQGridLayout)
 
-        self.requestName.textChanged[str].connect(parent.check_disable)
-        self.requestEndpoint.textChanged[str].connect(parent.check_disable)
-        self.addRequestToList.clicked.connect(parent.guiSaveRequest)
+        self.requestName.textChanged[str].connect(parent.checkDisableSaveAndDelete)
+        self.requestEndpoint.textChanged[str].connect(parent.checkDisableSaveAndDelete)
+        self.saveRequestInList.clicked.connect(parent.guiSaveRequest)
+        self.deleteRequestFromList.clicked.connect(parent.guiDeleteRequest)
