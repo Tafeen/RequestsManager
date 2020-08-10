@@ -1,11 +1,10 @@
 import sys
-from PySide2.QtCore import Slot
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
                                QWidget, QPushButton)
 from modules.workspace import RequestWorkspaceWidget
 from modules.requestItem import RequestInListWidget
-from utils.fileOperations import loadRequests, saveRequest
+from utils.fileOperations import loadRequests, saveRequest, removeRequest
 
 
 class RequestsMainWidget(QWidget):
@@ -13,6 +12,7 @@ class RequestsMainWidget(QWidget):
         QWidget.__init__(self)
 
         self._data = loadRequests()
+        self.ROW_TO_DATA = []
 
         # LEFT - LIST LAYOUT
         self.requestsListLayout = QGridLayout()
@@ -35,21 +35,31 @@ class RequestsMainWidget(QWidget):
         allQGridLayout.addWidget(self.requestWorkspaceWidget, 0, 1)
         self.setLayout(allQGridLayout)
 
-        # Signals and Slots
+        # Connections
         self.requestsListWidget.selectionModel().currentChanged.connect(
-            self.on_row_changed)
-        self.createNewRequest.clicked.connect(self.removeSelection)
+            self.onRowChanged)
+        # Creating new Request - remove selection
+        self.createNewRequest.clicked.connect(self.removeCurrentSelection)
 
         # Fill Requests List
         self.fill_list()
 
-    @Slot()
-    def add_request(self):
+    def createRequestWidget(self, requestName, requestType,
+                            requestEndpoint):
+        # Create QCustomQWidget
+        newRequestInListWidget = RequestInListWidget()
+        newRequestInListWidget.setRequestName(requestName)
+        newRequestInListWidget.setRequestType(requestType)
+        newRequestInListWidget.setRequestEndpoint(requestEndpoint)
+        return newRequestInListWidget
+
+    def guiSaveRequest(self):
         requestName = self.requestWorkspaceWidget.requestName.text()
         requestType = str(
             self.requestWorkspaceWidget.requestType.currentText())
         requestEndpoint = self.requestWorkspaceWidget.requestEndpoint.text()
-        requestBody = self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.toPlainText()
+        requestBody = (self.requestWorkspaceWidget
+                           .RequestAdvancedEditing.requestBody.toPlainText())
 
         # Set object
         self.requestObj = {
@@ -65,31 +75,61 @@ class RequestsMainWidget(QWidget):
 
         # Check if request has id (has been already in list)
         if self.requestWorkspaceWidget.requestId is None:
-            self.addRequestToRequestsList(
+            requestItem = self.addRequestToRequestsList(
                 requestName, requestType, requestEndpoint)
+            # Add QListWidgetItem into QListWidget
+            self.requestsListWidget.addItem(
+                requestItem["RequestsQListWidgetItem"])
+            self.requestsListWidget.setItemWidget(
+                requestItem["RequestsQListWidgetItem"],
+                requestItem["newRequestInListWidget"])
+
             requestId = saveRequest(self.requestObj)
             self.requestWorkspaceWidget.requestId = requestId
             self.requestWorkspaceWidget.requestLastModificationDate.setText(
                 "Just a while ago")
             self._data = loadRequests()
+            self.ROW_TO_DATA.append(requestId)
+        else:
+            selectedRow = self.currentSelectedRequest
 
-        # TODO: If else - update already added item in list
+            # Overwrite Request with same id
+            self.requestObj["id"] = self._data[selectedRow]["id"]
+            saveRequest(self.requestObj)
 
-    @Slot()
-    def removeSelection(self):
-        # Clear all inputs
-        self.clearWorkspaceInputs()
-        self.requestWorkspaceWidget.requestId = None
-        self.requestsListWidget.clearSelection()
+            # Delete currently selected item
+            self.requestsListWidget.takeItem(selectedRow)
 
-    @Slot()
+            # Create Request Item
+            newRequestInListWidget = self.createRequestWidget(
+                requestName, requestType, requestEndpoint)
+
+            # Create QListWidgetItem
+            RequestsQListWidgetItem = QListWidgetItem()
+
+            # Set size hint
+            RequestsQListWidgetItem.setSizeHint(
+                newRequestInListWidget.sizeHint())
+
+            self.requestsListWidget.insertItem(
+                selectedRow, RequestsQListWidgetItem)
+
+            self.requestsListWidget.setItemWidget(
+                RequestsQListWidgetItem,
+                newRequestInListWidget)
+
+            # Update current request in workspace
+            self.requestWorkspaceWidget.requestId = self.requestObj["id"]
+            self._data = loadRequests()
+            self.requestsListWidget.setCurrentRow(selectedRow)
+            (self.requestWorkspaceWidget.requestLastModificationDate
+                                        .setText("Just a while ago"))
+
     def addRequestToRequestsList(self, requestName, requestType,
                                  requestEndpoint):
-        # Create QCustomQWidget
-        myRequestInListWidget = RequestInListWidget()
-        myRequestInListWidget.setRequestName(requestName)
-        myRequestInListWidget.setRequestType(requestType)
-        myRequestInListWidget.setRequestEndpoint(requestEndpoint)
+        newRequestInListWidget = self.createRequestWidget(requestName,
+                                                          requestType,
+                                                          requestEndpoint)
 
         # Create QListWidgetItem
         RequestsQListWidgetItem = QListWidgetItem(
@@ -97,36 +137,45 @@ class RequestsMainWidget(QWidget):
 
         # Set size hint
         RequestsQListWidgetItem.setSizeHint(
-            myRequestInListWidget.sizeHint())
+            newRequestInListWidget.sizeHint())
 
-        # Add QListWidgetItem into QListWidget
-        self.requestsListWidget.addItem(RequestsQListWidgetItem)
-        self.requestsListWidget.setItemWidget(
-            RequestsQListWidgetItem, myRequestInListWidget)
+        return({"RequestsQListWidgetItem": RequestsQListWidgetItem,
+                "newRequestInListWidget": newRequestInListWidget})
 
-    @Slot()
-    def removeSelectedRequests(self):
+    def guiDeleteRequest(self):
         listItems = self.requestsListWidget.selectedItems()
         if not listItems:
             return
         for item in listItems:
             self.requestsListWidget.takeItem(self.requestsListWidget.row(item))
+            removeRequest(self.ROW_TO_DATA[self.currentSelectedRequest-1])
+            del self.ROW_TO_DATA[self.currentSelectedRequest-1]
 
-    @Slot()
+    def removeCurrentSelection(self):
+        # Clear all inputs
+        self.clearWorkspaceInputs()
+        self.requestWorkspaceWidget.requestId = None
+        self.requestsListWidget.clearSelection()
+
     def fill_list(self, data=None):
         data = self._data if not data else data
         for index, request in enumerate(data):
-            self.addRequestToRequestsList(
+            requestItem = self.addRequestToRequestsList(
                 request["name"], request["type"], request["endpoint"])
+            self.requestsListWidget.addItem(
+                requestItem["RequestsQListWidgetItem"])
+            self.requestsListWidget.setItemWidget(
+                requestItem["RequestsQListWidgetItem"],
+                requestItem["newRequestInListWidget"])
+            self.ROW_TO_DATA.append(request["id"])
 
-    @Slot()
-    def on_row_changed(self, current, previous):
-        print(f'Row {current.row()} selected')
-        selectedRequestObj = self._data[current.row()]
-
+    def onRowChanged(self, current, previous):
+        self.currentSelectedRequest = current.row()
+        selectedRequestObj = next(request for request in self._data if request["id"] == self.ROW_TO_DATA[self.currentSelectedRequest])
         # Clear all inputs
         self.clearWorkspaceInputs()
 
+        # Load data from request object
         self.requestWorkspaceWidget.requestName.setText(
             selectedRequestObj["name"])
         self.requestWorkspaceWidget.requestLastModificationDate.setText(
@@ -137,11 +186,10 @@ class RequestsMainWidget(QWidget):
             selectedRequestObj["endpoint"])
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             selectedRequestObj["body"])
-        self.requestWorkspaceWidget.requestId = self._data[current.row()]["id"]
+        self.requestWorkspaceWidget.requestId = selectedRequestObj["id"]
 
-        self.requestWorkspaceWidget.addRequestToList.setText("Update request")
+        self.requestWorkspaceWidget.saveRequestInList.setText("Update request")
 
-    @Slot()
     def clearWorkspaceInputs(self):
         self.requestWorkspaceWidget.requestName.setText("")
         self.requestWorkspaceWidget.requestLastModificationDate.setText("")
@@ -149,15 +197,16 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestEndpoint.setText("")
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             "")
-        self.requestWorkspaceWidget.addRequestToList.setText("Save request")
+        self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
 
-    @Slot()
-    def check_disable(self, s):
+    def checkDisableSaveAndDelete(self, s):
         if (not self.requestWorkspaceWidget.requestName.text() or
                 not self.requestWorkspaceWidget.requestEndpoint.text()):
-            self.requestWorkspaceWidget.addRequestToList.setEnabled(False)
+            self.requestWorkspaceWidget.saveRequestInList.setEnabled(False)
+            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(False)
         else:
-            self.requestWorkspaceWidget.addRequestToList.setEnabled(True)
+            self.requestWorkspaceWidget.saveRequestInList.setEnabled(True)
+            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(True)
 
 
 class MainWindow(QMainWindow):
