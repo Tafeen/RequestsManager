@@ -58,6 +58,9 @@ class RequestsMainWidget(QWidget):
         requestType = str(
             self.requestWorkspaceWidget.requestType.currentText())
         requestEndpoint = self.requestWorkspaceWidget.requestEndpoint.text()
+        requestHeaders = (self.requestWorkspaceWidget
+                              .RequestAdvancedEditing.requestHeaders
+                              .accessHeadersData())
         requestBody = (self.requestWorkspaceWidget
                            .RequestAdvancedEditing.requestBody.toPlainText())
 
@@ -66,10 +69,7 @@ class RequestsMainWidget(QWidget):
             "name": requestName,
             "type": requestType,
             "endpoint": requestEndpoint,
-            "headers": {
-                "User-Agent": "",
-                "Content-Type": "application/json"
-            },
+            "headers": requestHeaders,
             "body": requestBody,
         }
 
@@ -186,6 +186,8 @@ class RequestsMainWidget(QWidget):
             selectedRequestObj["endpoint"])
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             selectedRequestObj["body"])
+        self.requestWorkspaceWidget.requestHeadersData = selectedRequestObj["headers"]
+        self.requestWorkspaceWidget.printRequestHeaders()
         self.requestWorkspaceWidget.requestId = selectedRequestObj["id"]
 
         self.requestWorkspaceWidget.saveRequestInList.setText("Update request")

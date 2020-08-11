@@ -1,24 +1,76 @@
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QLabel, QPushButton, QGridLayout,
-                               QWidget, QComboBox)
+                               QWidget, QComboBox,
+                               QTableWidget, QHeaderView, QTableWidgetItem,
+                               QTabWidget)
+
+
+class RequestHeadersTable(QWidget):
+    def __init__(self, parent):
+        super(RequestHeadersTable, self).__init__(parent)
+
+        title = ["Header name", "Header value"]
+        self.data = parent.data
+        colcnt = 2
+        self.tablewidget = QTableWidget()
+
+        self.tablewidget.setColumnCount(colcnt)
+        hheader = QHeaderView(Qt.Orientation.Horizontal)
+        self.tablewidget.setHorizontalHeader(hheader)
+        self.tablewidget.setHorizontalHeaderLabels(title)
+        self.tablewidget.horizontalHeader().setStretchLastSection(True)
+        self.tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        rowcnt = len(self.data)
+        self.tablewidget.setRowCount(rowcnt)
+        for index, key in enumerate(self.data):
+            self.tablewidget.setItem(index, 0, QTableWidgetItem(key))
+            self.tablewidget.setItem(
+                index, 1, QTableWidgetItem(self.data.get(key)))
+
+        layout = QHBoxLayout()
+        layout.addWidget(self.tablewidget)
+        self.setLayout(layout)
+
+    def setData(self, parent):
+        self.tablewidget.clear()
+        self.data = parent.data
+        rowcnt = len(self.data)
+        self.tablewidget.setRowCount(rowcnt)
+        for index, key in enumerate(self.data):
+            self.tablewidget.setItem(index, 0, QTableWidgetItem(key))
+            self.tablewidget.setItem(
+                index, 1, QTableWidgetItem(self.data.get(key)))
+        self.accessHeadersData()
+
+    def accessHeadersData(self):
+        currentData = {}
+        for index, key in enumerate(self.data):
+            key = self.tablewidget.item(index, 0).text()
+            value = self.tablewidget.item(index, 1).text()
+            currentData[key] = value
+        return currentData
 
 
 class RequestAdvancedEditingWidget(QWidget):
     def __init__(self, parent):
         super(RequestAdvancedEditingWidget, self).__init__(parent)
+
+        self.data = parent.requestHeadersData
+        self.tabWidget = QTabWidget()
+
+        # Request Body
         self.requestBody = QTextEdit()
 
-        self.requestMenuHeaders = QLabel("Headers")
-        self.requestMenuBody = QLabel("Body")
+        # Request Headers
+        self.requestHeaders = RequestHeadersTable(self)
 
-        self.switchQHBoxLayout = QHBoxLayout()
-        self.switchQHBoxLayout.addWidget(self.requestMenuHeaders)
-        self.switchQHBoxLayout.addWidget(self.requestMenuBody)
+        self.tabWidget.addTab(self.requestHeaders, "Headers")
+        self.tabWidget.addTab(self.requestBody, "Body")
 
         allQGridLayout = QGridLayout()
-        allQGridLayout.addLayout(self.switchQHBoxLayout, 0, 0)
-        allQGridLayout.addWidget(self.requestBody, 1, 0)
+        allQGridLayout.addWidget(self.tabWidget, 0, 0)
 
         self.setLayout(allQGridLayout)
 
@@ -27,6 +79,12 @@ class RequestWorkspaceWidget(QWidget):
     def __init__(self, parent):
         super(RequestWorkspaceWidget, self).__init__(parent)
 
+        defaultRequestHeadersData = {
+            "User-Agent": "RequestsManager.0.2020.0.1",
+            "Content-Type": "application/json"
+        }
+        self.requestHeadersData = defaultRequestHeadersData
+        self.data = {}
         # Request ID
         self.requestId = None
 
@@ -85,7 +143,13 @@ class RequestWorkspaceWidget(QWidget):
 
         self.setLayout(self.allQGridLayout)
 
-        self.requestName.textChanged[str].connect(parent.checkDisableSaveAndDelete)
-        self.requestEndpoint.textChanged[str].connect(parent.checkDisableSaveAndDelete)
+        self.requestName.textChanged[str].connect(
+            parent.checkDisableSaveAndDelete)
+        self.requestEndpoint.textChanged[str].connect(
+            parent.checkDisableSaveAndDelete)
         self.saveRequestInList.clicked.connect(parent.guiSaveRequest)
         self.deleteRequestFromList.clicked.connect(parent.guiDeleteRequest)
+
+    def printRequestHeaders(self):
+        self.data = self.requestHeadersData
+        self.RequestAdvancedEditing.requestHeaders.setData(self)
