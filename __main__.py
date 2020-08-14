@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.8.3
 import sys
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
@@ -58,6 +59,9 @@ class RequestsMainWidget(QWidget):
         requestType = str(
             self.requestWorkspaceWidget.requestType.currentText())
         requestEndpoint = self.requestWorkspaceWidget.requestEndpoint.text()
+        requestHeaders = (self.requestWorkspaceWidget
+                              .RequestAdvancedEditing.requestHeaders
+                              .accessHeadersData())
         requestBody = (self.requestWorkspaceWidget
                            .RequestAdvancedEditing.requestBody.toPlainText())
 
@@ -66,10 +70,7 @@ class RequestsMainWidget(QWidget):
             "name": requestName,
             "type": requestType,
             "endpoint": requestEndpoint,
-            "headers": {
-                "User-Agent": "",
-                "Content-Type": "application/json"
-            },
+            "headers": requestHeaders,
             "body": requestBody,
         }
 
@@ -171,21 +172,26 @@ class RequestsMainWidget(QWidget):
 
     def onRowChanged(self, current, previous):
         self.currentSelectedRequest = current.row()
-        selectedRequestObj = next(request for request in self._data if request["id"] == self.ROW_TO_DATA[self.currentSelectedRequest])
+        selectedRequestObj = next(request for request in self._data
+                                  if request["id"] == self.ROW_TO_DATA[self.currentSelectedRequest])
         # Clear all inputs
         self.clearWorkspaceInputs()
 
         # Load data from request object
         self.requestWorkspaceWidget.requestName.setText(
             selectedRequestObj["name"])
-        self.requestWorkspaceWidget.requestLastModificationDate.setText(
-            selectedRequestObj["lastModificationDate"])
+        (self.requestWorkspaceWidget
+             .requestLastModificationDate
+             .setText(f'Saved: {selectedRequestObj["lastModificationDate"]}'))
         self.requestWorkspaceWidget.requestType.setCurrentText(
             selectedRequestObj["type"])
         self.requestWorkspaceWidget.requestEndpoint.setText(
             selectedRequestObj["endpoint"])
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
             selectedRequestObj["body"])
+        (self.requestWorkspaceWidget
+             .requestHeadersData) = selectedRequestObj["headers"]
+        self.requestWorkspaceWidget.printRequestHeaders()
         self.requestWorkspaceWidget.requestId = selectedRequestObj["id"]
 
         self.requestWorkspaceWidget.saveRequestInList.setText("Update request")
