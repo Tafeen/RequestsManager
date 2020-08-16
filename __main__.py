@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.8.3
 import sys
+import json
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
                                QWidget, QPushButton)
@@ -64,7 +65,6 @@ class RequestsMainWidget(QWidget):
                               .accessHeadersData())
         requestBody = (self.requestWorkspaceWidget
                            .RequestAdvancedEditing.requestBody.toPlainText())
-
         # Set object
         self.requestObj = {
             "name": requestName,
@@ -187,8 +187,11 @@ class RequestsMainWidget(QWidget):
             selectedRequestObj["type"])
         self.requestWorkspaceWidget.requestEndpoint.setText(
             selectedRequestObj["endpoint"])
+        # Format body to json
+        jsonBody = json.loads(selectedRequestObj["body"])
+        jsonBody = json.dumps(jsonBody, indent=4)
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            selectedRequestObj["body"])
+            jsonBody)
         (self.requestWorkspaceWidget
              .requestHeadersData) = selectedRequestObj["headers"]
         self.requestWorkspaceWidget.printRequestHeaders()
@@ -202,7 +205,9 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestType.setCurrentIndex(0)
         self.requestWorkspaceWidget.requestEndpoint.setText("")
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            "")
+            "{}")
+        self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
+        self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
         self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
 
     def checkDisableSaveAndDelete(self, s):
@@ -220,7 +225,7 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.setWindowTitle("RequestsManager")
         self.setCentralWidget(widget)
-        self.setMinimumSize(900, 600)
+        self.setMinimumSize(1200, 600)
 
 
 if __name__ == "__main__":
