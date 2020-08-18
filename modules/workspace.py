@@ -1,4 +1,5 @@
 from PySide2.QtCore import Qt
+import json
 from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QLabel, QPushButton, QGridLayout,
                                QWidget, QComboBox,
@@ -155,7 +156,7 @@ class RequestAdvancedEditingWidget(QWidget):
         self.tabWidget = QTabWidget()
 
         # Request Body
-        self.requestBody = QTextEdit("{}")
+        self.requestBody = QTextEdit("")
 
         # Request Headers
         self.requestHeaders = RequestHeadersTable(self)
@@ -229,16 +230,16 @@ class RequestWorkspaceWidget(QWidget):
         self.allQGridLayout = QGridLayout()
         self.allQGridLayout.addLayout(
             self.informationQHBoxLayout, 0, 0, 0, 3, Qt.AlignTop)
-        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 2, 0, 1, 3)
+        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 3, 0, 1, 3)
         self.allQGridLayout.addWidget(
-            self.RequestAdvancedEditing, 3, 0, 1, 0, Qt.AlignVCenter)
-        self.allQGridLayout.addWidget(self.RequestResponse, 5, 0, 1, 4)
+            self.RequestAdvancedEditing, 4, 0, 1, 0, Qt.AlignVCenter)
+        self.allQGridLayout.addWidget(self.RequestResponse, 6, 0, 1, 4)
         self.allQGridLayout.addWidget(
-            self.sendRequest, 6, 1, Qt.AlignBottom)
+            self.sendRequest, 7, 1, Qt.AlignBottom)
         self.allQGridLayout.addWidget(
-            self.saveRequestInList, 6, 2, Qt.AlignBottom)
+            self.saveRequestInList, 7, 2, Qt.AlignBottom)
         self.allQGridLayout.addWidget(
-            self.deleteRequestFromList, 6, 3, Qt.AlignBottom)
+            self.deleteRequestFromList, 7, 3, Qt.AlignBottom)
 
         self.setLayout(self.allQGridLayout)
 
@@ -260,4 +261,12 @@ class RequestWorkspaceWidget(QWidget):
                                          self.data,
                                          self.RequestAdvancedEditing.requestBody.toPlainText())
         self.RequestResponse.responseStatus.setText("Status Code: " + str(requestResponseData.status_code))
-        self.RequestResponse.responseBody.setText(requestResponseData.text)
+
+        # Check if body is json type
+        try:
+            parsedBody = json.loads(str(requestResponseData.text))
+            formatedBody = json.dumps(parsedBody, indent=4)
+            self.RequestResponse.responseBody.setTextColor(Qt.white)
+            self.RequestResponse.responseBody.setText(formatedBody)
+        except Exception as ex:
+            self.RequestResponse.responseBody.setText(requestResponseData.text)

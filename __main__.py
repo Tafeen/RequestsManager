@@ -195,11 +195,15 @@ class RequestsMainWidget(QWidget):
             selectedRequestObj["type"])
         self.requestWorkspaceWidget.requestEndpoint.setText(
             selectedRequestObj["endpoint"])
-        # Format body to json
-        jsonBody = json.loads(selectedRequestObj["body"])
-        jsonBody = json.dumps(jsonBody, indent=4)
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            jsonBody)
+
+        # Check if body is json type
+        try:
+            parsedBody = json.loads(selectedRequestObj["body"])
+            formatedBody = json.dumps(parsedBody, indent=4)
+            self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(formatedBody)
+        except Exception as ex:
+            self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(selectedRequestObj["body"])
+
         (self.requestWorkspaceWidget
              .requestHeadersData) = selectedRequestObj["headers"]
         self.requestWorkspaceWidget.printRequestHeaders()
@@ -212,8 +216,7 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestLastModificationDate.setText("")
         self.requestWorkspaceWidget.requestType.setCurrentIndex(0)
         self.requestWorkspaceWidget.requestEndpoint.setText("")
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            "{}")
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText("")
         self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
         self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
         self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
