@@ -7,6 +7,7 @@ from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
 from utils.requestWrapper import requestWrapper
 from modules.response import RequestsResponseWidget
 
+
 class RequestHeadersTable(QWidget):
     def __init__(self, parent):
         super(RequestHeadersTable, self).__init__(parent)
@@ -217,8 +218,9 @@ class RequestWorkspaceWidget(QWidget):
         # Set request editing widget
         self.RequestAdvancedEditing = RequestAdvancedEditingWidget(self)
 
-        # Set request response widget 
+        # Set request response widget
         self.RequestResponse = RequestsResponseWidget(self)
+        # self.RequestResponse.setFixedWidth(600)
 
         self.endpointQVBoxLayout = QHBoxLayout()
         self.endpointQVBoxLayout.addWidget(self.requestType)
@@ -258,4 +260,4 @@ class RequestWorkspaceWidget(QWidget):
                                          self.data,
                                          self.RequestAdvancedEditing.requestBody.toPlainText())
         self.RequestResponse.responseStatus.setText("Status Code: " + str(requestResponseData.status_code))
-        self.RequestResponse.responseBody.setText(str(requestResponseData.text))
+        self.RequestResponse.responseBody.setText(requestResponseData.text)

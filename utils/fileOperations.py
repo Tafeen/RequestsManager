@@ -1,8 +1,7 @@
 import json
 import datetime
 
-fileName = 'requests.json'
-
+fileName = "requests.json"
 
 def saveRequest(request):
     requestsList = []
@@ -11,6 +10,7 @@ def saveRequest(request):
     request["lastModificationDate"] = datetime.datetime.utcnow().strftime(
         '%Y-%m-%dT%H:%M:%SZ')
     lastId = 0
+
     # Check if file exists and is array
     try:
         with open(fileName, 'r', encoding='utf-8') as f:

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3.8.3
 import sys
 import json
+import datetime
+
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
                                QWidget, QPushButton)
@@ -88,7 +90,7 @@ class RequestsMainWidget(QWidget):
             requestId = saveRequest(self.requestObj)
             self.requestWorkspaceWidget.requestId = requestId
             self.requestWorkspaceWidget.requestLastModificationDate.setText(
-                "Just a while ago")
+                "Saved just a while ago")
             self._data = loadRequests()
             self.ROW_TO_DATA.append(requestId)
         else:
@@ -124,7 +126,7 @@ class RequestsMainWidget(QWidget):
             self._data = loadRequests()
             self.requestsListWidget.setCurrentRow(selectedRow)
             (self.requestWorkspaceWidget.requestLastModificationDate
-                                        .setText("Just a while ago"))
+                                        .setText("Saved just a while ago"))
 
     def addRequestToRequestsList(self, requestName, requestType,
                                  requestEndpoint):
@@ -180,9 +182,15 @@ class RequestsMainWidget(QWidget):
         # Load data from request object
         self.requestWorkspaceWidget.requestName.setText(
             selectedRequestObj["name"])
+
+        # Format data
+        time = datetime.datetime.strptime(selectedRequestObj["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        month = "0"+str(time.month) if time.month < 10 else time.month
+
         (self.requestWorkspaceWidget
              .requestLastModificationDate
-             .setText(f'Saved: {selectedRequestObj["lastModificationDate"]}'))
+             .setText(f'Saved:  {time.year}/{month}/{time.day} at {time.hour}:{time.minute}'))
+
         self.requestWorkspaceWidget.requestType.setCurrentText(
             selectedRequestObj["type"])
         self.requestWorkspaceWidget.requestEndpoint.setText(
