@@ -1,7 +1,19 @@
 import json
 import datetime
+import sys
+import os
 
-fileName = "requests.json"
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.environ.get("_MEIPASS2",os.path.abspath("."))
+
+    return os.path.join(base_path, relative_path)
+
 
 def saveRequest(request):
     requestsList = []
@@ -13,7 +25,7 @@ def saveRequest(request):
 
     # Check if file exists and is array
     try:
-        with open(fileName, 'r', encoding='utf-8') as f:
+        with open(resource_path("././requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
                 # Check if request with this id exists
@@ -35,7 +47,7 @@ def saveRequest(request):
         pass
     finally:
         if(not isFileCorrupted):
-            with open(fileName, 'w+', encoding='utf-8') as f:
+            with open(resource_path("./requests.json"), 'w', encoding='utf-8') as f:
                 json.dump(requestsList, f, ensure_ascii=False, indent=4)
         return(request["id"])
 
@@ -43,7 +55,7 @@ def saveRequest(request):
 def removeRequest(requestId):
     requestsList = []
     try:
-        with open(fileName, 'r', encoding='utf-8') as f:
+        with open(resource_path("./requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
                 requestsList = list(
@@ -53,7 +65,7 @@ def removeRequest(requestId):
     except Exception as ex:
         print(ex)
     finally:
-        with open(fileName, 'w', encoding='utf-8') as f:
+        with open(resource_path("./requests.json"), 'w', encoding='utf-8') as f:
             json.dump(requestsList, f, ensure_ascii=False, indent=4)
         return requestsList
 
@@ -63,7 +75,7 @@ def loadRequests():
 
     # Check if file exists and is array
     try:
-        with open(fileName, 'r', encoding='utf-8') as f:
+        with open(resource_path("./requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
             except Exception as ex:
