@@ -4,6 +4,8 @@ from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QWidget, QComboBox,
                                QTableWidget, QHeaderView, QTableWidgetItem,
                                QTabWidget)
+from utils.requestWrapper import requestWrapper
+from modules.response import RequestsResponseWidget
 
 
 class RequestHeadersTable(QWidget):
@@ -153,7 +155,7 @@ class RequestAdvancedEditingWidget(QWidget):
         self.tabWidget = QTabWidget()
 
         # Request Body
-        self.requestBody = QTextEdit()
+        self.requestBody = QTextEdit("{}")
 
         # Request Headers
         self.requestHeaders = RequestHeadersTable(self)
@@ -216,6 +218,10 @@ class RequestWorkspaceWidget(QWidget):
         # Set request editing widget
         self.RequestAdvancedEditing = RequestAdvancedEditingWidget(self)
 
+        # Set request response widget
+        self.RequestResponse = RequestsResponseWidget(self)
+        # self.RequestResponse.setFixedWidth(600)
+
         self.endpointQVBoxLayout = QHBoxLayout()
         self.endpointQVBoxLayout.addWidget(self.requestType)
         self.endpointQVBoxLayout.addWidget(self.requestEndpoint)
@@ -223,15 +229,16 @@ class RequestWorkspaceWidget(QWidget):
         self.allQGridLayout = QGridLayout()
         self.allQGridLayout.addLayout(
             self.informationQHBoxLayout, 0, 0, 0, 3, Qt.AlignTop)
-        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 1, 0, 1, 0)
+        self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 2, 0, 1, 3)
         self.allQGridLayout.addWidget(
-            self.RequestAdvancedEditing, 2, 0, 1, 0, Qt.AlignVCenter)
+            self.RequestAdvancedEditing, 3, 0, 1, 0, Qt.AlignVCenter)
+        self.allQGridLayout.addWidget(self.RequestResponse, 5, 0, 1, 4)
         self.allQGridLayout.addWidget(
-            self.sendRequest, 4, 1, Qt.AlignBottom)
+            self.sendRequest, 6, 1, Qt.AlignBottom)
         self.allQGridLayout.addWidget(
-            self.saveRequestInList, 4, 2, Qt.AlignBottom)
+            self.saveRequestInList, 6, 2, Qt.AlignBottom)
         self.allQGridLayout.addWidget(
-            self.deleteRequestFromList, 4, 3, Qt.AlignBottom)
+            self.deleteRequestFromList, 6, 3, Qt.AlignBottom)
 
         self.setLayout(self.allQGridLayout)
 
@@ -240,8 +247,17 @@ class RequestWorkspaceWidget(QWidget):
         self.requestEndpoint.textChanged[str].connect(
             parent.checkDisableSaveAndDelete)
         self.saveRequestInList.clicked.connect(parent.guiSaveRequest)
+        self.sendRequest.clicked.connect(self.sendRequestSignal)
         self.deleteRequestFromList.clicked.connect(parent.guiDeleteRequest)
 
     def printRequestHeaders(self):
         self.data = self.requestHeadersData
         self.RequestAdvancedEditing.requestHeaders.setData(self)
+
+    def sendRequestSignal(self):
+        requestResponseData = requestWrapper(self.requestType.currentText(),
+                                         self.requestEndpoint.text(),
+                                         self.data,
+                                         self.RequestAdvancedEditing.requestBody.toPlainText())
+        self.RequestResponse.responseStatus.setText("Status Code: " + str(requestResponseData.status_code))
+        self.RequestResponse.responseBody.setText(requestResponseData.text)

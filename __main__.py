@@ -1,5 +1,8 @@
 #!/usr/bin/env python3.8.3
 import sys
+import json
+import datetime
+
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
                                QWidget, QPushButton)
@@ -64,7 +67,6 @@ class RequestsMainWidget(QWidget):
                               .accessHeadersData())
         requestBody = (self.requestWorkspaceWidget
                            .RequestAdvancedEditing.requestBody.toPlainText())
-
         # Set object
         self.requestObj = {
             "name": requestName,
@@ -88,7 +90,7 @@ class RequestsMainWidget(QWidget):
             requestId = saveRequest(self.requestObj)
             self.requestWorkspaceWidget.requestId = requestId
             self.requestWorkspaceWidget.requestLastModificationDate.setText(
-                "Just a while ago")
+                "Saved just a while ago")
             self._data = loadRequests()
             self.ROW_TO_DATA.append(requestId)
         else:
@@ -124,7 +126,7 @@ class RequestsMainWidget(QWidget):
             self._data = loadRequests()
             self.requestsListWidget.setCurrentRow(selectedRow)
             (self.requestWorkspaceWidget.requestLastModificationDate
-                                        .setText("Just a while ago"))
+                                        .setText("Saved just a while ago"))
 
     def addRequestToRequestsList(self, requestName, requestType,
                                  requestEndpoint):
@@ -180,15 +182,24 @@ class RequestsMainWidget(QWidget):
         # Load data from request object
         self.requestWorkspaceWidget.requestName.setText(
             selectedRequestObj["name"])
+
+        # Format data
+        time = datetime.datetime.strptime(selectedRequestObj["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        month = "0"+str(time.month) if time.month < 10 else time.month
+
         (self.requestWorkspaceWidget
              .requestLastModificationDate
-             .setText(f'Saved: {selectedRequestObj["lastModificationDate"]}'))
+             .setText(f'Saved:  {time.year}/{month}/{time.day} at {time.hour}:{time.minute}'))
+
         self.requestWorkspaceWidget.requestType.setCurrentText(
             selectedRequestObj["type"])
         self.requestWorkspaceWidget.requestEndpoint.setText(
             selectedRequestObj["endpoint"])
+        # Format body to json
+        jsonBody = json.loads(selectedRequestObj["body"])
+        jsonBody = json.dumps(jsonBody, indent=4)
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            selectedRequestObj["body"])
+            jsonBody)
         (self.requestWorkspaceWidget
              .requestHeadersData) = selectedRequestObj["headers"]
         self.requestWorkspaceWidget.printRequestHeaders()
@@ -202,7 +213,9 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestType.setCurrentIndex(0)
         self.requestWorkspaceWidget.requestEndpoint.setText("")
         self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
-            "")
+            "{}")
+        self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
+        self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
         self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
 
     def checkDisableSaveAndDelete(self, s):
@@ -220,7 +233,7 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.setWindowTitle("RequestsManager")
         self.setCentralWidget(widget)
-        self.setMinimumSize(900, 600)
+        self.setMinimumSize(1200, 600)
 
 
 if __name__ == "__main__":
