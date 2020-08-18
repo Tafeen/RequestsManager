@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8.3
 import sys
 import json
-import datetime
+from datetime import datetime, timezone
 
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
@@ -185,8 +185,9 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.requestName.setText(
             selectedRequestObj["name"])
 
-        # Format data
-        time = datetime.datetime.strptime(selectedRequestObj["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        # Format UTC data to locale
+        timeUTC = datetime.strptime(selectedRequestObj["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        time = timeUTC.replace(tzinfo=timezone.utc).astimezone(tz=None)
         month = "0"+str(time.month) if time.month < 10 else time.month
 
         (self.requestWorkspaceWidget
