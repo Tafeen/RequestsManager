@@ -6,6 +6,8 @@ import datetime
 from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
                                QListWidgetItem, QGridLayout,
                                QWidget, QPushButton)
+from PySide2.QtGui import QPalette, QColor
+from PySide2.QtCore import Qt
 from modules.workspace import RequestWorkspaceWidget
 from modules.requestItem import RequestInListWidget
 from utils.fileOperations import loadRequests, saveRequest, removeRequest
@@ -202,6 +204,7 @@ class RequestsMainWidget(QWidget):
             formatedBody = json.dumps(parsedBody, indent=4)
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(formatedBody)
         except Exception as ex:
+            print(f'Its not json file - {ex}')
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(selectedRequestObj["body"])
 
         (self.requestWorkspaceWidget
@@ -242,6 +245,20 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     # Qt Application
     app = QApplication(sys.argv)
+
+    app.setStyle("Fusion")
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor(41, 41, 41))
+    palette.setColor(QPalette.WindowText, Qt.white)
+    palette.setColor(QPalette.Base, QColor(23, 23, 23))
+    palette.setColor(QPalette.Text, Qt.white)
+    palette.setColor(QPalette.Button, QColor(41, 41, 41))
+    palette.setColor(QPalette.ButtonText, Qt.white)
+    palette.setColor(QPalette.Link, QColor(66, 165, 227))
+    palette.setColor(QPalette.Highlight, QColor(0, 76, 117))
+    palette.setColor(QPalette.HighlightedText, Qt.black)
+
+    app.setPalette(palette)
 
     # QWidget
     widget = RequestsMainWidget()

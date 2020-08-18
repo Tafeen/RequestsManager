@@ -16,7 +16,7 @@ class RequestsResponseWidget(QWidget):
         self.responseBody.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         wholeResponseLayout.addWidget(responseTitle, 0, 0)
-        wholeResponseLayout.addWidget(self.responseStatus, 1, 0)
-        wholeResponseLayout.addWidget(self.responseBody, 2, 0)
+        wholeResponseLayout.addWidget(self.responseStatus, 0, 0, Qt.AlignRight)
+        wholeResponseLayout.addWidget(self.responseBody, 1, 0)
 
         self.setLayout(wholeResponseLayout)
