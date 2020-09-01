@@ -2,150 +2,11 @@ from PySide2.QtCore import Qt
 import json
 from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QLabel, QPushButton, QGridLayout,
-                               QWidget, QComboBox,
-                               QTableWidget, QHeaderView, QTableWidgetItem,
-                               QTabWidget)
+                               QWidget, QComboBox, QTabWidget)
+
 from utils.requestWrapper import requestWrapper
+from modules.headersTable import RequestHeadersTable
 from modules.response import RequestsResponseWidget
-
-
-class RequestHeadersTable(QWidget):
-    def __init__(self, parent):
-        super(RequestHeadersTable, self).__init__(parent)
-
-        title = ["Header name", "Header value"]
-        self.data = parent.data
-        self.currentlyAccessingData = False
-        colcnt = 2
-        self.tablewidget = QTableWidget()
-
-        self.tablewidget.setColumnCount(colcnt)
-        hheader = QHeaderView(Qt.Orientation.Horizontal)
-        self.tablewidget.setHorizontalHeader(hheader)
-        self.tablewidget.setHorizontalHeaderLabels(title)
-        self.tablewidget.horizontalHeader().setStretchLastSection(True)
-        (self.tablewidget.horizontalHeader()
-                         .setSectionResizeMode(QHeaderView.Stretch))
-
-        rowcnt = len(self.data)+1
-        self.tablewidget.setRowCount(rowcnt)
-        for index, key in enumerate(self.data):
-            self.tablewidget.setItem(index, 0, QTableWidgetItem(key))
-            self.tablewidget.setItem(
-                index, 1, QTableWidgetItem(self.data.get(key)))
-        # Add empty new header
-        self.tablewidget.setItem(rowcnt, 0, QTableWidgetItem(""))
-        self.tablewidget.setItem(rowcnt, 1, QTableWidgetItem(""))
-
-        # detect which element selected
-        self.tablewidget.selectionModel().currentChanged.connect(
-            self.onRowChanged)
-
-        # detect when element item changed and lost focus
-        self.tablewidget.itemChanged.connect(self.itemDataChanged)
-
-        layout = QHBoxLayout()
-        layout.addWidget(self.tablewidget)
-        self.setLayout(layout)
-
-    def setData(self, parent):
-        self.currentlyAccessingData = True
-        self.tablewidget.clearContents()
-        self.data = parent.data
-
-        rowcnt = len(self.data)+1
-        self.tablewidget.setRowCount(rowcnt)
-        for index, key in enumerate(self.data):
-            self.tablewidget.setItem(index, 0, QTableWidgetItem(key))
-            self.tablewidget.setItem(
-                index, 1, QTableWidgetItem(self.data.get(key)))
-        # Add empty new header
-        self.tablewidget.setItem(rowcnt, 0, QTableWidgetItem(""))
-        self.tablewidget.setItem(rowcnt, 1, QTableWidgetItem(""))
-        self.accessHeadersData()
-
-        self.currentlyAccessingData = False
-
-    def accessHeadersData(self):
-        currentData = {}
-        for index, key in enumerate(self.data):
-            keyItem = self.tablewidget.item(index, 0)
-            if(keyItem is not None):
-                if(keyItem.text() != ""):
-                    keyItem.text()
-                else:
-                    continue
-            else:
-                continue
-
-            valueItem = self.tablewidget.item(index, 1)
-            if(valueItem is None):
-                value = ""
-            else:
-                value = valueItem.text()
-
-            currentData[key] = value
-        return currentData
-
-    def itemDataChanged(self):
-        if not self.currentlyAccessingData:
-            self.currentlyAccessingData = True
-
-            # Set new key and value
-            new_key = self.tablewidget.item(self.rowSelected, 0)
-            self.new_key = new_key.text() if new_key is not None else ""
-            new_value = self.tablewidget.item(self.rowSelected, 1)
-            self.new_value = new_value.text() if new_value is not None else ""
-
-            # Check if edited value changed
-            keyChanged = False
-
-            if(self.new_key != ""):
-                if(self.old_key != "" and self.old_key != self.new_key):
-                    print("!Updated key name")
-                    del self.data[self.old_key]
-                    self.data[self.new_key] = self.old_value
-                    keyChanged = True
-                else:
-                    print("!Added new key with empty value")
-                    self.data[self.new_key] = ""
-
-            if(self.new_value != ""):
-                if(self.old_value != self.new_value):
-                    print("!Updated key value")
-                    if keyChanged:
-                        self.data[self.new_key] = self.new_value
-                    else:
-                        self.data[self.old_key] = self.new_value
-
-            self.updateOldKeyToValue()
-
-            # Add new item if last key is empty
-            lastKey = self.tablewidget.item(self.tablewidget.rowCount()-1, 0)
-            lastKeyIsSet = False
-
-            if(lastKey is not None):
-                if(lastKey.text() != ""):
-                    lastKeyIsSet = True
-
-            if(lastKeyIsSet):
-                self.tablewidget.insertRow(self.tablewidget.rowCount())
-                self.tablewidget.setItem(self.tablewidget.rowCount(),
-                                         0, QTableWidgetItem(""))
-                self.tablewidget.setItem(self.tablewidget.rowCount(),
-                                         1, QTableWidgetItem(""))
-
-            self.currentlyAccessingData = False
-
-    def onRowChanged(self, current, previous):
-        self.rowSelected = current.row()
-        self.updateOldKeyToValue()
-
-    def updateOldKeyToValue(self):
-        old_key = self.tablewidget.item(self.rowSelected, 0)
-        self.old_key = old_key.text() if old_key is not None else ""
-        old_value = self.tablewidget.item(self.rowSelected, 1)
-        self.old_value = old_value.text() if old_value is not None else ""
 
 
 class RequestAdvancedEditingWidget(QWidget):
@@ -159,9 +20,14 @@ class RequestAdvancedEditingWidget(QWidget):
         self.requestBody = QTextEdit("")
 
         # Request Headers
-        self.requestHeaders = RequestHeadersTable(self)
+        headersData = {
+            "User-Agent": "RequestsManager.0.2020.0.1",
+            "Content-Type": "application/json"
+        }
 
-        self.tabWidget.addTab(self.requestHeaders, "Headers")
+        self.requestHeadersTable = RequestHeadersTable(self, headersData)
+
+        self.tabWidget.addTab(self.requestHeadersTable, "Headers")
         self.tabWidget.addTab(self.requestBody, "Body")
 
         allQGridLayout = QGridLayout()
@@ -180,6 +46,7 @@ class RequestWorkspaceWidget(QWidget):
         }
         self.requestHeadersData = defaultRequestHeadersData
         self.data = {}
+
         # Request ID
         self.requestId = None
 
@@ -256,9 +123,9 @@ class RequestWorkspaceWidget(QWidget):
 
     def sendRequestSignal(self):
         requestResponseData = requestWrapper(self.requestType.currentText(),
-                                         self.requestEndpoint.text(),
-                                         self.data,
-                                         self.RequestAdvancedEditing.requestBody.toPlainText())
+                                             self.requestEndpoint.text(),
+                                             self.data,
+                                             self.RequestAdvancedEditing.requestBody.toPlainText())
         requestResponseCodeType = {
             "Info": "orange",
             "Success": "green",
@@ -286,6 +153,6 @@ class RequestWorkspaceWidget(QWidget):
             formatedBody = json.dumps(parsedBody, indent=4)
             self.RequestResponse.responseBody.setTextColor(Qt.white)
             self.RequestResponse.responseBody.setText(formatedBody)
-        except Exception as ex: 
+        except Exception as ex:
             print(f'Its not json file - {ex}')
             self.RequestResponse.responseBody.setText(requestResponseData.text)
