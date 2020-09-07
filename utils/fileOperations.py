@@ -10,52 +10,59 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.environ.get("_MEIPASS2",os.path.abspath("."))
+        base_path = os.environ.get("_MEIPASS2", os.path.abspath(""))
 
+    # base_path = ""
     return os.path.join(base_path, relative_path)
 
 
-def saveRequest(request):
+def saveRequestToFile(request):
     requestsList = []
     requestsList.append(request)
     isFileCorrupted = False
-    request["lastModificationDate"] = datetime.datetime.utcnow().strftime(
-        '%Y-%m-%dT%H:%M:%SZ')
+    request["lastModificationDate"] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     lastId = 0
 
     # Check if file exists and is array
     try:
-        with open(resource_path("././requests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
-                # Check if request with this id exists
-                if "id" in request:
-                    request_index = next((index for (index, d) in enumerate(
-                        requestsList) if d["id"] == request["id"]), None)
-                    requestsList[request_index] = request
+                if(type(requestsList) is list and len(requestsList) > 0):
+                    # print(requestsList)
+                    # Check if request with this id exists
+                    if "id" in request:
+                        request_index = next((index for (index, d) in enumerate(
+                            requestsList) if d["id"] == request["id"]), None)
+                        requestsList[request_index] = request
+                    else:
+                        lastId = max(request["id"] for request in requestsList)
+                        request["id"] = lastId + 1
+                        requestsList.append(request)
                 else:
-                    lastId = max(request["id"] for request in requestsList)
-                    request["id"] = lastId + 1
+                    request["id"] = 0
                     requestsList.append(request)
             except Exception as ex:
                 print(ex)
-                isFileCorrupted = True
+                print("It was not json file")
                 request["id"] = 0
+                requestsList = []
+                requestsList.append(request)
     except Exception as ex:
         print(ex)
         request["id"] = 0
         pass
     finally:
         if(not isFileCorrupted):
-            with open(resource_path("./requests.json"), 'w', encoding='utf-8') as f:
+            with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
                 json.dump(requestsList, f, ensure_ascii=False, indent=4)
         return(request["id"])
 
 
-def removeRequest(requestId):
+def removeRequestFromFile(requestId):
     requestsList = []
     try:
-        with open(resource_path("./requests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
                 requestsList = list(
@@ -65,7 +72,7 @@ def removeRequest(requestId):
     except Exception as ex:
         print(ex)
     finally:
-        with open(resource_path("./requests.json"), 'w', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(requestsList, f, ensure_ascii=False, indent=4)
         return requestsList
 
@@ -75,7 +82,7 @@ def loadRequests():
 
     # Check if file exists and is array
     try:
-        with open(resource_path("./requests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 requestsList = json.load(f)
             except Exception as ex:
@@ -83,4 +90,7 @@ def loadRequests():
     except Exception as ex:
         print(ex)
     finally:
-        return requestsList
+        if type(requestsList) is list:
+            return requestsList
+        else:
+            return []

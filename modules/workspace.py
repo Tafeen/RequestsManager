@@ -13,19 +13,14 @@ class RequestAdvancedEditingWidget(QWidget):
     def __init__(self, parent):
         super(RequestAdvancedEditingWidget, self).__init__(parent)
 
-        self.data = parent.requestHeadersData
         self.tabWidget = QTabWidget()
 
         # Request Body
         self.requestBody = QTextEdit("")
 
-        # Request Headers
-        headersData = {
-            "User-Agent": "RequestsManager.0.2020.0.1",
-            "Content-Type": "application/json"
-        }
-
-        self.requestHeadersTable = RequestHeadersTable(self, headersData)
+        # Request Headers defaults
+        self._headersData = parent._headersData
+        self.requestHeadersTable = RequestHeadersTable(self)
 
         self.tabWidget.addTab(self.requestHeadersTable, "Headers")
         self.tabWidget.addTab(self.requestBody, "Body")
@@ -41,10 +36,17 @@ class RequestWorkspaceWidget(QWidget):
         super(RequestWorkspaceWidget, self).__init__(parent)
 
         defaultRequestHeadersData = {
-            "User-Agent": "RequestsManager.0.2020.0.1",
+            "User-Agent": "RequestsManager.0.2020.0.2",
             "Content-Type": "application/json"
         }
-        self.requestHeadersData = defaultRequestHeadersData
+
+        # Check if any requests has been loaded
+        if(parent.selectedRequest is not None):
+            self._headersData = (parent.
+                                 _requestsData[parent.selectedRequest]
+                                 ["headers"])
+        else:
+            self._headersData = defaultRequestHeadersData
         self.data = {}
 
         # Request ID
@@ -52,8 +54,8 @@ class RequestWorkspaceWidget(QWidget):
 
         # Request overall information
         self.requestName = QLineEdit()
-        self.requestName.setPlaceholderText("Request name")
-        self.requestLastModificationDate = QLabel("Saved just a while ago")
+        self.requestName.setPlaceholderText("New request name")
+        self.requestLastModificationDate = QLabel("Not Saved")
 
         self.informationQHBoxLayout = QHBoxLayout()
         self.informationQHBoxLayout.addWidget(self.requestName)
@@ -113,19 +115,16 @@ class RequestWorkspaceWidget(QWidget):
             parent.checkDisableSaveAndDelete)
         self.requestEndpoint.textChanged[str].connect(
             parent.checkDisableSaveAndDelete)
-        self.saveRequestInList.clicked.connect(parent.guiSaveRequest)
+        self.saveRequestInList.clicked.connect(parent.saveRequest)
         self.sendRequest.clicked.connect(self.sendRequestSignal)
-        self.deleteRequestFromList.clicked.connect(parent.guiDeleteRequest)
-
-    def printRequestHeaders(self):
-        self.data = self.requestHeadersData
-        self.RequestAdvancedEditing.requestHeaders.setData(self)
+        self.deleteRequestFromList.clicked.connect(parent.deleteRequest)
 
     def sendRequestSignal(self):
         requestResponseData = requestWrapper(self.requestType.currentText(),
                                              self.requestEndpoint.text(),
                                              self.data,
-                                             self.RequestAdvancedEditing.requestBody.toPlainText())
+                                             self.RequestAdvancedEditing.
+                                             requestBody.toPlainText())
         requestResponseCodeType = {
             "Info": "orange",
             "Success": "green",
@@ -144,8 +143,10 @@ class RequestWorkspaceWidget(QWidget):
         if(requestResponseData.status_code >= 500):
             responseColor = requestResponseCodeType['ServerErr']
 
-        self.RequestResponse.responseStatus.setStyleSheet(f'color: {responseColor}')
-        self.RequestResponse.responseStatus.setText("Status Code: " + str(requestResponseData.status_code))
+        (self.RequestResponse.responseStatus.
+         setStyleSheet(f'color: {responseColor}'))
+        (self.RequestResponse.responseStatus.
+         setText(f'Status Code: {str(requestResponseData.status_code)}'))
 
         # Check if body is json type
         try:

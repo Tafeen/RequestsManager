@@ -6,9 +6,19 @@ from PySide2.QtWidgets import (QWidget, QHBoxLayout,
 # Model
 class NewRequestHeadersTableModel(QAbstractTableModel):
     def __init__(self, parent, headers_data=None):
+        self.parent = parent
         super(NewRequestHeadersTableModel, self).__init__(parent)
         self.load_data(headers_data)
         self.addBlankRow()
+
+    # TODO: Optimise to not update if same value as before
+    def update_data(self):
+        updateHeadersData = RequestHeadersTable.updateHeadersData
+        headersDict = {}
+        # Convert data to json
+        for index, key in enumerate(self.headers_keys):
+            headersDict[key] = self.headers_values[index]
+        updateHeadersData(self.parent, headersDict)
 
     def load_data(self, data):
         keys_list = []
@@ -16,6 +26,7 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
         for index, key in enumerate(data):
             keys_list.append(key)
             values_list.append(data[key])
+        self.dataChanged.emit(QModelIndex(), QModelIndex())
 
         self.headers_keys = keys_list
         self.headers_values = values_list
@@ -82,10 +93,9 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
             elif column == 1:
                 self.headers_values[row] = Text
             self.data(QModelIndex)
-            # TODO: if data changed -> update main holder of headers data
+            self.update_data()
             self.dataChanged.emit(QModelIndex, QModelIndex, [])
 
-            # After editing Check if both key and value are filled in last row of table -> add new row
             if(row == len(self.headers_keys)-1
                and self.headers_keys[row] != ""
                and self.headers_values[row] != ""):
@@ -96,11 +106,13 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
 
 # Table Layout
 class RequestHeadersTable(QWidget):
-    def __init__(self, parent, headers_data=None):
+    def __init__(self, parent):
+        self.parent = parent
         super(RequestHeadersTable, self).__init__(parent)
 
         # Create Table
-        self.requestHeadersModel = NewRequestHeadersTableModel(self, headers_data)
+        self.requestHeadersModel = NewRequestHeadersTableModel(
+            self, self.parent._headersData)
         self.requestHeadersTable = QTableView()
         self.requestHeadersTable.setModel(self.requestHeadersModel)
 
@@ -114,3 +126,6 @@ class RequestHeadersTable(QWidget):
         self.requestHeadersLayout = QHBoxLayout()
         self.requestHeadersLayout.addWidget(self.requestHeadersTable)
         self.setLayout(self.requestHeadersLayout)
+
+    def updateHeadersData(self, headers_data):
+        self.parent._headersData = headers_data
