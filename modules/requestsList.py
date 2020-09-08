@@ -1,4 +1,4 @@
-from PySide2.QtCore import Qt, QAbstractListModel, QModelIndex
+from PySide2.QtCore import Qt, QAbstractListModel, QModelIndex, QItemSelectionModel
 from PySide2.QtWidgets import (QWidget, QHBoxLayout, QListWidgetItem,
                                QListView)
 from modules.requestItem import RequestInListWidget
@@ -26,6 +26,9 @@ class NewRequestListModel(QAbstractListModel):
 
     def columnCount(self, parent=QModelIndex()):
         return 1
+
+    def getIndex(self, row):
+        return self.createIndex(row, 0, QModelIndex())
 
     def createRequestWidget(self, requestName, requestType,
                             requestEndpoint):
@@ -66,3 +69,8 @@ class RequestsList(QWidget):
     def updateRequestsData(self, requests_data):
         self.parent._requestsData = requests_data
         print(self.parent._requestsData)
+
+    def selectRow(self, row):
+        self.requestsList.selectionModel().clearSelection()
+        self.requestsList.selectionModel().setCurrentIndex(
+            self.requestsListModel.createIndex(row, 0, QModelIndex), QItemSelectionModel.Select)

@@ -2,8 +2,7 @@
 import sys
 from datetime import datetime, timezone
 
-from PySide2.QtWidgets import (QApplication, QMainWindow, QListWidget,
-                               QListWidgetItem, QGridLayout,
+from PySide2.QtWidgets import (QApplication, QMainWindow, QGridLayout,
                                QWidget, QPushButton)
 from PySide2.QtGui import QPalette, QColor
 from PySide2.QtCore import Qt
@@ -46,14 +45,17 @@ class RequestsMainWidget(QWidget):
         allQGridLayout.addWidget(self.requestWorkspaceWidget, 0, 1)
         self.setLayout(allQGridLayout)
 
-        # Connections
 
+        # Connections
         # On row changed set inputs
         (self.requestsListWidget.requestsList.
          selectionModel().currentChanged.connect(self.onRowChanged))
 
         # Creating new Request - remove selection
-        # self.createNewRequest.clicked.connect(self.removeCurrentSelection)
+        self.createNewRequest.clicked.connect(self.clearWorkspace)
+
+        # Select last item in list
+        self.requestsListWidget.selectRow(len(self._requestsData)-1)
 
     def checkDisableSaveAndDelete(self, s):
         if (not self.requestWorkspaceWidget.requestName.text() or
@@ -67,6 +69,7 @@ class RequestsMainWidget(QWidget):
     def onRowChanged(self, current, previous):
         self.selectedRequest = current.row()
         self.requestWorkspaceWidget.saveRequestInList.setText("Update request")
+
         # Update data in workspace
         requestId = self._requestsData[self.selectedRequest]["id"]
         requestName = self._requestsData[self.selectedRequest]["name"]
@@ -75,13 +78,28 @@ class RequestsMainWidget(QWidget):
         requestHeaders = self._requestsData[self.selectedRequest]["headers"]
         requestBody = self._requestsData[self.selectedRequest]["body"]
 
+        # Format UTC data to locale
+        timeUTC = datetime.strptime(
+            self._requestsData[self.selectedRequest]["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        time = timeUTC.replace(tzinfo=timezone.utc).astimezone(tz=None)
+
+        month = "0"+str(time.month) if time.month < 10 else time.month
+        day = "0"+str(time.day) if time.day < 10 else time.day
+        hour = "0"+str(time.hour) if time.hour < 10 else time.hour
+        minute = "0"+str(time.minute) if time.minute < 10 else time.minute
+
+        (self.requestWorkspaceWidget
+             .requestLastModificationDate
+             .setText(f'Saved:  {time.year}/{month}/{day} at {hour}:{minute}'))
+
         self.requestWorkspaceWidget.requestId = requestId
         self.requestWorkspaceWidget.requestName.setText(requestName)
         self.requestWorkspaceWidget.requestType.setCurrentText(requestType)
         self.requestWorkspaceWidget.requestEndpoint.setText(requestEndpoint)
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(requestHeaders)
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setPlainText(requestBody)
-
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
+            requestHeaders)
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setPlainText(
+            requestBody)
 
     def saveRequest(self):
         # Current data
@@ -105,12 +123,16 @@ class RequestsMainWidget(QWidget):
             requestId = saveRequestToFile(self.requestDict)
             self.requestDict["id"] = requestId
             self._requestsData.append(self.requestDict)
-            # TODO: Select last row
+            # Select last item in list
+            self.requestsListWidget.selectRow(len(self._requestsData)-1)
             print(f'saved request with id: {requestId}')
         else:
             self.requestDict["id"] = requestId
             saveRequestToFile(self.requestDict)
             self._requestsData[self.selectedRequest] = self.requestDict
+            (self.requestWorkspaceWidget
+             .requestLastModificationDate
+             .setText("Just updated"))
             print(f'updated request with id: {requestId}')
 
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
@@ -120,6 +142,21 @@ class RequestsMainWidget(QWidget):
         self._requestsData.pop(self.selectedRequest)
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
         print("Deleted request")
+        self.requestsListWidget.selectRow(len(self._requestsData)-1)
+
+    def clearWorkspace(self):
+        self.requestWorkspaceWidget.requestId = None
+        self.requestWorkspaceWidget.requestName.setText("")
+        self.requestWorkspaceWidget.requestLastModificationDate.setText("")
+        self.requestWorkspaceWidget.requestType.setCurrentIndex(0)
+        self.requestWorkspaceWidget.requestEndpoint.setText("")
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
+            "")
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
+            self.requestWorkspaceWidget.defaultRequestHeadersData)
+        self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
+        self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
+        self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
 
 
 class MainWindow(QMainWindow):

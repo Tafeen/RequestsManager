@@ -35,7 +35,7 @@ class RequestWorkspaceWidget(QWidget):
     def __init__(self, parent):
         super(RequestWorkspaceWidget, self).__init__(parent)
 
-        defaultRequestHeadersData = {
+        self.defaultRequestHeadersData = {
             "User-Agent": "RequestsManager.0.2020.0.2",
             "Content-Type": "application/json"
         }
@@ -46,7 +46,7 @@ class RequestWorkspaceWidget(QWidget):
                                  _requestsData[parent.selectedRequest]
                                  ["headers"])
         else:
-            self._headersData = defaultRequestHeadersData
+            self._headersData = self.defaultRequestHeadersData
         self.data = {}
 
         # Request ID
