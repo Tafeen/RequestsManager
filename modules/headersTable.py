@@ -16,7 +16,8 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
         headersDict = {}
         # Convert data to json
         for index, key in enumerate(self.headers_keys):
-            headersDict[key] = self.headers_values[index]
+            if(len(self.headers_keys[index]) > 0 or len(self.headers_values[index]) > 0):
+                headersDict[key] = self.headers_values[index]
         updateHeadersData(self.parent, headersDict)
 
     def load_data(self, data):
@@ -89,8 +90,7 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
             self.update_data()
 
             if(row == len(self.headers_keys)-1
-               and self.headers_keys[row] != ""
-               and self.headers_values[row] != ""):
+               and (len(self.headers_keys[row]) > 0 or len(self.headers_values[row]) > 0)):
                 print("adding blank row")
                 self.addBlankRow()
             self.dataChanged.emit(QModelIndex, QModelIndex)
