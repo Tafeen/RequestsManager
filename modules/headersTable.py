@@ -9,7 +9,6 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
         self.parent = parent
         super(NewRequestHeadersTableModel, self).__init__(parent)
         self.load_data(headers_data)
-        self.addBlankRow()
 
     # TODO: Optimise to not update if same value as before
     def update_data(self):
@@ -21,24 +20,23 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
         updateHeadersData(self.parent, headersDict)
 
     def load_data(self, data):
+        self.row_count = len(data)
         keys_list = []
         values_list = []
         for index, key in enumerate(data):
             keys_list.append(key)
             values_list.append(data[key])
-        self.dataChanged.emit(QModelIndex(), QModelIndex())
 
         self.headers_keys = keys_list
         self.headers_values = values_list
-
-        self.column_count = 2
-        self.row_count = len(self.headers_values)
+        self.addBlankRow()
+        self.layoutChanged.emit()
 
     def rowCount(self, parent=QModelIndex()):
         return self.row_count
 
     def columnCount(self, parent=QModelIndex()):
-        return self.column_count
+        return 2
 
     def beginInsertRow(self, QModelIndex, row):
         return self.beginInsertRows(QModelIndex, row, row)
@@ -61,14 +59,7 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
     def data(self, index, role=Qt.DisplayRole):
         column = index.column()
         row = index.row()
-
-        if role == Qt.DisplayRole:
-            if column == 0:
-                return self.headers_keys[row]
-            elif column == 1:
-                return self.headers_values[row]
-
-        if role == Qt.EditRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             if column == 0:
                 return self.headers_keys[row]
             elif column == 1:
@@ -81,10 +72,11 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
         self.headers_keys.append("")
         self.headers_values.append("")
         self.row_count = len(self.headers_values)
-        self.dataChanged.emit(QModelIndex(), QModelIndex())
+        self.layoutChanged.emit()
         self.endInsertRows()
 
     def setData(self, QModelIndex, Text, role=None):
+        print("Changed data")
         row = QModelIndex.row()
         column = QModelIndex.column()
         if role == Qt.EditRole:
@@ -92,14 +84,16 @@ class NewRequestHeadersTableModel(QAbstractTableModel):
                 self.headers_keys[row] = Text
             elif column == 1:
                 self.headers_values[row] = Text
+
             self.data(QModelIndex)
             self.update_data()
-            self.dataChanged.emit(QModelIndex, QModelIndex, [])
 
             if(row == len(self.headers_keys)-1
                and self.headers_keys[row] != ""
                and self.headers_values[row] != ""):
+                print("adding blank row")
                 self.addBlankRow()
+            self.dataChanged.emit(QModelIndex, QModelIndex)
             return True
         return False
 
