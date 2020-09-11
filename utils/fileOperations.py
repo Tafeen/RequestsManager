@@ -20,7 +20,8 @@ def saveRequestToFile(request):
     requestsList = []
     requestsList.append(request)
     isFileCorrupted = False
-    request["lastModificationDate"] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    request["lastModificationDate"] = datetime.datetime.utcnow().strftime(
+        '%Y-%m-%dT%H:%M:%SZ')
     lastId = 0
 
     # Check if file exists and is array
@@ -94,3 +95,29 @@ def loadRequests():
             return requestsList
         else:
             return []
+
+
+def saveIntegrations(integration):
+    settings = {}
+    try:
+        with open(resource_path("settings.json"), 'r', encoding='utf-8') as f:
+            try:
+                settings = json.load(f)
+                if(type(settings) is dict and len(settings) > 0):
+                    key = next((i for i, item in enumerate(settings["integrations"]) if item["provider"] == integration['provider']), None)
+                    if(key is not None):
+                        settings["integrations"][key] = integration
+                    else:
+                        settings["integrations"].append(integration)
+                else:
+                    settings = {}
+                    settings["integrations"] = []
+                    settings["integrations"].append(integration)
+            except Exception as ex:
+                print(ex)
+    except Exception as ex:
+        settings["integrations"] = []
+        settings["integrations"].append(integration)
+    finally:
+        with open(resource_path("settings.json"), 'w', encoding='utf-8') as f:
+            json.dump(settings, f, ensure_ascii=False, indent=4)
