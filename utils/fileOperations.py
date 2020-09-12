@@ -78,21 +78,20 @@ def removeRequestFromFile(requestId):
         return requestsList
 
 
-def loadRequests():
-    requestsList = []
-
+def loadWorkspaces():
+    workspacesList = []
     # Check if file exists and is array
     try:
-        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
             try:
-                requestsList = json.load(f)
+                workspacesList = json.load(f)
             except Exception as ex:
                 print(ex)
     except Exception as ex:
         print(ex)
     finally:
-        if type(requestsList) is list:
-            return requestsList
+        if type(workspacesList) is list:
+            return workspacesList
         else:
             return []
 

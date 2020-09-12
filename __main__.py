@@ -9,8 +9,9 @@ from PySide2.QtCore import Qt
 
 from modules.workspace import RequestWorkspaceWidget
 from modules.requestsList import RequestsList
+from modules.workspaceSettings import WorkspaceSettingsWidget
 
-from utils.fileOperations import (loadRequests, saveRequestToFile,
+from utils.fileOperations import (saveRequestToFile, loadWorkspaces,
                                   removeRequestFromFile)
 
 
@@ -18,11 +19,17 @@ class RequestsMainWidget(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
-        self._requestsData = loadRequests()
+        self._workspacesData = loadWorkspaces()
+        self._requestsData = self._workspacesData[0]["requests"]
         self.selectedRequest = None
 
         if(len(self._requestsData) > 0):
             self.selectedRequest = len(self._requestsData)-1
+
+        # TOP LEFT - workspace settings
+        self.workspaceSettingsWidget = WorkspaceSettingsWidget(self)
+        self.workspaceSettingsWidget.setMaximumWidth(320)
+        self.workspaceSettingsWidget.setMaximumHeight(50)
 
         # LEFT - LIST LAYOUT
         self.requestsListLayout = QGridLayout()
@@ -41,10 +48,10 @@ class RequestsMainWidget(QWidget):
         allQGridLayout = QGridLayout()
         allQGridLayout.setColumnStretch(0, 2)
         allQGridLayout.setColumnStretch(1, 5)
-        allQGridLayout.addLayout(self.requestsListLayout, 0, 0)
-        allQGridLayout.addWidget(self.requestWorkspaceWidget, 0, 1)
+        allQGridLayout.addWidget(self.workspaceSettingsWidget, 0, 0)
+        allQGridLayout.addLayout(self.requestsListLayout, 1, 0)
+        allQGridLayout.addWidget(self.requestWorkspaceWidget, 1, 1)
         self.setLayout(allQGridLayout)
-
 
         # Connections
         # On row changed set inputs
@@ -69,7 +76,8 @@ class RequestsMainWidget(QWidget):
     def onRowChanged(self, current, previous):
         self.selectedRequest = current.row()
         if(self.selectedRequest != -1):
-            self.requestWorkspaceWidget.saveRequestInList.setText("Update request")
+            self.requestWorkspaceWidget.saveRequestInList.setText(
+                "Update request")
 
             # Update data in workspace
             requestId = self._requestsData[self.selectedRequest]["id"]
@@ -96,7 +104,8 @@ class RequestsMainWidget(QWidget):
             self.requestWorkspaceWidget.requestId = requestId
             self.requestWorkspaceWidget.requestName.setText(requestName)
             self.requestWorkspaceWidget.requestType.setCurrentText(requestType)
-            self.requestWorkspaceWidget.requestEndpoint.setText(requestEndpoint)
+            self.requestWorkspaceWidget.requestEndpoint.setText(
+                requestEndpoint)
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
                 requestHeaders)
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setPlainText(

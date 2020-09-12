@@ -132,7 +132,7 @@ class RequestDocumentation(QWidget):
         self.parent = parent
         self._requestDocumentationData = None
         super(RequestDocumentation, self).__init__(parent)
-       
+
         self.connectWithGitlabBtn = QPushButton("Connect with gitlab wiki's")
 
         # Set layout
@@ -141,7 +141,6 @@ class RequestDocumentation(QWidget):
         self.setLayout(self.requestDocumentationLayout)
 
         self.connectWithGitlabBtn.clicked.connect(lambda provider: self.Integration("gitlab"))
-        
 
     def closeIntegrationSetup(self):
         self.integrationDialog.close()
