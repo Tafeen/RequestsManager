@@ -2,6 +2,8 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QCheckBox, QLabel, QPushButton, QGridLayout,
                                QDialog, QWidget, QComboBox, QTabWidget)
+from utils.fileOperations import saveWorkspaceDataToFile, removeWorkspaceFromFile
+
 
 class integrationWikiWidget(QWidget):
     def __init__(self, parent):
@@ -62,7 +64,7 @@ class WorkspaceSettingsDialog(QDialog):
 
         self.integrationsWiki = integrationWikiWidget(self)
 
-        self.saveBtn = QPushButton("Save workspace")
+        self.saveBtn = QPushButton("Update workspace")
 
         # Set layout
         self.allQGridLayout = QGridLayout()
@@ -79,6 +81,7 @@ class WorkspaceSettingsDialog(QDialog):
 class WorkspaceSettingsWidget(QWidget):
     def __init__(self, parent):
         self.parent = parent
+        self.addingNewWorkspace = False
         super(WorkspaceSettingsWidget, self).__init__(parent)
 
         # Worskpaces
@@ -88,6 +91,7 @@ class WorkspaceSettingsWidget(QWidget):
         self.workspaceSpaces = QComboBox()
         for option in WORKSPACES:
             self.workspaceSpaces.addItem(option)
+        self.workspaceSpaces.addItem("Create new Workspace")
 
         # Workspace Details
         self.workspaceDetails = QPushButton("Settings")
@@ -124,16 +128,36 @@ class WorkspaceSettingsWidget(QWidget):
         )]["spaceName"] = self.workspaceSettingsDialog.workspaceName.text()
         wasAtIndex = self.workspaceSpaces.currentIndex()
         self.updateWorkspaceNames(wasAtIndex)
-        print(self.parent._workspacesData[self.workspaceSpaces.currentIndex(
-        )]["integrations"]["wiki"])
-        
+        saveWorkspaceDataToFile(self.parent._workspacesData[wasAtIndex])
+
+        if(self.addingNewWorkspace):
+            if(len(self.workspaceSettingsDialog.workspaceName.text()) < 1):
+                # Delete workspace
+                removeWorkspaceFromFile(self.parent.workspaceId)
 
     def updateWorkspaceNames(self, index):
         self.workspaceSpaces.clear()
         WORKSPACES = [d["spaceName"] for d in self.parent._workspacesData]
         for option in WORKSPACES:
             self.workspaceSpaces.addItem(option)
+        self.workspaceSpaces.addItem("Create new Workspace")
         self.workspaceSpaces.setCurrentIndex(index)
 
     def changeWorkspace(self):
-        print("Change workspace")
+        # Check if user want to add new workspace
+        if (self.workspaceSpaces.currentIndex() == len(self.parent._workspacesData)):
+            print("Creating new workspace")
+            emptyWorkspace = {
+                "spaceName": "",
+                "integrations": {
+                    "wiki": []
+                },
+                "requests": []
+            }
+            self.parent._workspacesData.append(emptyWorkspace)
+            id = saveWorkspaceDataToFile(emptyWorkspace)
+            self.parent.workspaceId = id
+            self.openWorkspaceSettingsDialog()
+            self.workspaceSettingsDialog.saveBtn.setText("Save workspace")
+        else:
+            self.parent.changeWorkspace(self.workspaceSpaces.currentIndex())

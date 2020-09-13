@@ -11,7 +11,7 @@ from modules.workspace import RequestWorkspaceWidget
 from modules.requestsList import RequestsList
 from modules.workspaceSettings import WorkspaceSettingsWidget
 
-from utils.fileOperations import (saveRequestToFile, loadWorkspaces,
+from utils.fileOperations import (saveRequestDataToFile, loadWorkspaces,
                                   removeRequestFromFile)
 
 
@@ -20,7 +20,8 @@ class RequestsMainWidget(QWidget):
         QWidget.__init__(self)
 
         self._workspacesData = loadWorkspaces()
-        self._requestsData = self._workspacesData[0]["requests"]
+        self.workspaceId = 0
+        self._requestsData = self._workspacesData[self.workspaceId]["requests"]
         self.selectedRequest = None
 
         if(len(self._requestsData) > 0):
@@ -130,7 +131,7 @@ class RequestsMainWidget(QWidget):
         }
 
         if self.requestWorkspaceWidget.requestId is None:
-            requestId = saveRequestToFile(self.requestDict)
+            requestId = saveRequestDataToFile(self.requestDict, self.workspaceId)
             self.requestDict["id"] = requestId
             self._requestsData.append(self.requestDict)
             # Select last item in list
@@ -138,7 +139,7 @@ class RequestsMainWidget(QWidget):
             print(f'Saved request with id: {requestId}')
         else:
             self.requestDict["id"] = requestId
-            saveRequestToFile(self.requestDict)
+            saveRequestDataToFile(self.requestDict, self.workspaceId)
             self._requestsData[self.selectedRequest] = self.requestDict
             (self.requestWorkspaceWidget
              .requestLastModificationDate
@@ -148,7 +149,7 @@ class RequestsMainWidget(QWidget):
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
 
     def deleteRequest(self):
-        removeRequestFromFile(self.requestWorkspaceWidget.requestId)
+        removeRequestFromFile(self.requestWorkspaceWidget.requestId, self.workspaceId)
         self._requestsData.pop(self.selectedRequest)
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
         print("Deleted request")
@@ -169,6 +170,18 @@ class RequestsMainWidget(QWidget):
         self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
         self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
         self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
+
+    def changeWorkspace(self, workspaceId):
+        self.workspaceId = workspaceId
+        self._requestsData = self._workspacesData[workspaceId]["requests"]
+        if(len(self._requestsData) > 0):
+            self.requestsListWidget.requestsListModel._requestsData = self._requestsData
+            self.requestsListWidget.requestsListModel.load_data(self._requestsData)
+            self.requestsListWidget.selectRow(len(self._requestsData)-1)
+        else:
+            self.requestsListWidget.requestsListModel.load_data([])
+            self.clearWorkspace()
+        print(workspaceId)
 
 
 class MainWindow(QMainWindow):

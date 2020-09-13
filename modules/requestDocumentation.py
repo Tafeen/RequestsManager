@@ -3,7 +3,7 @@ from PySide2.QtWidgets import (QWidget, QHBoxLayout, QDialog, QLabel,
                                QGridLayout, QLineEdit, QPushButton)
 import requests
 import json
-from utils.fileOperations import saveIntegrations
+from utils.fileOperations import saveUserIntegration
 
 
 class ErrorDuringConnection(QDialog):
@@ -98,8 +98,9 @@ class IntegrationDetails(QWidget):
                         "provider": self.integrationProvider,
                         "access_token": self.accessToken.text()
                     }
-                    # Save connection
-                    saveIntegrations(integrationObj)
+                    # Save connection to user settings
+                    saveUserIntegration(integrationObj)
+                    #TODO: Save connection to workspace
                     self.SuccessAfterConnection.show()
                     self.SuccessAfterConnection.activateWindow()
                 else:
