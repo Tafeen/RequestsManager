@@ -10,9 +10,10 @@ from PySide2.QtCore import Qt
 from modules.workspace import RequestWorkspaceWidget
 from modules.requestsList import RequestsList
 from modules.workspaceSettings import WorkspaceSettingsWidget
+from modules.userSettings import UserSettingsWidget
 
 from utils.fileOperations import (saveRequestDataToFile, loadWorkspaces,
-                                  removeRequestFromFile)
+                                  removeRequestFromFile, loadUserData)
 
 
 class RequestsMainWidget(QWidget):
@@ -21,6 +22,7 @@ class RequestsMainWidget(QWidget):
 
         self._workspacesData = loadWorkspaces()
         self.workspaceId = 0
+        self._userData = loadUserData()
         self._requestsData = self._workspacesData[self.workspaceId]["requests"]
         self.selectedRequest = None
 
@@ -31,6 +33,11 @@ class RequestsMainWidget(QWidget):
         self.workspaceSettingsWidget = WorkspaceSettingsWidget(self)
         self.workspaceSettingsWidget.setMaximumWidth(320)
         self.workspaceSettingsWidget.setMaximumHeight(50)
+
+        # TOP RIGHT - user settings
+        self.userSettingsWidget = UserSettingsWidget(self)
+        self.userSettingsWidget.setMaximumWidth(320)
+        self.userSettingsWidget.setMaximumHeight(50)
 
         # LEFT - LIST LAYOUT
         self.requestsListLayout = QGridLayout()
@@ -50,6 +57,7 @@ class RequestsMainWidget(QWidget):
         allQGridLayout.setColumnStretch(0, 2)
         allQGridLayout.setColumnStretch(1, 5)
         allQGridLayout.addWidget(self.workspaceSettingsWidget, 0, 0)
+        allQGridLayout.addWidget(self.userSettingsWidget, 0, 1, Qt.AlignRight)
         allQGridLayout.addLayout(self.requestsListLayout, 1, 0)
         allQGridLayout.addWidget(self.requestWorkspaceWidget, 1, 1)
         self.setLayout(allQGridLayout)

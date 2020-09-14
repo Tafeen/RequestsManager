@@ -57,8 +57,8 @@ class WorkspaceSettingsDialog(QDialog):
         super(WorkspaceSettingsDialog, self).__init__(parent)
         self._currentWorkspaceData = self.parent.parent._workspacesData[self.parent.workspaceSpaces.currentIndex(
         )]
-        self.setMinimumSize(420, 120)
-
+        self.setFixedSize(420, 200)
+        self.setWindowTitle("Workspace settings")
         self.workspaceName = QLineEdit(self._currentWorkspaceData["spaceName"])
         self.workspaceName.setPlaceholderText("Workspace name")
 
@@ -77,11 +77,16 @@ class WorkspaceSettingsDialog(QDialog):
 
         self.saveBtn.clicked.connect(self.parent.saveWorkspace)
 
+    def closeEvent(self, event):
+        print("Closed workspaceSettings")
+        self.parent.checkWorkspaceIsCorrect()
+
 
 class WorkspaceSettingsWidget(QWidget):
     def __init__(self, parent):
         self.parent = parent
         self.addingNewWorkspace = False
+        self.workspaceSavedToFile = False
         super(WorkspaceSettingsWidget, self).__init__(parent)
 
         # Worskpaces
@@ -94,7 +99,7 @@ class WorkspaceSettingsWidget(QWidget):
         self.workspaceSpaces.addItem("Create new Workspace")
 
         # Workspace Details
-        self.workspaceDetails = QPushButton("Settings")
+        self.workspaceDetails = QPushButton("Workspace settings")
 
         allQGridLayout = QGridLayout()
         allQGridLayout.addWidget(self.workspaceSpaces, 0, 0)
@@ -112,6 +117,7 @@ class WorkspaceSettingsWidget(QWidget):
 
     def saveWorkspace(self):
         # Update integrations
+        self.workspaceSavedToFile = True
         integrationsList = self.workspaceSettingsDialog.integrationsWiki.integrationList()
         for integrationObj in enumerate(integrationsList):
             key = next((i for i, item in enumerate(self.parent._workspacesData[self.workspaceSpaces.currentIndex(
@@ -131,13 +137,38 @@ class WorkspaceSettingsWidget(QWidget):
         saveWorkspaceDataToFile(self.parent._workspacesData[wasAtIndex])
 
         if(self.addingNewWorkspace):
+            self.workspaceSettingsDialog.close()
+
+    def checkWorkspaceIsCorrect(self):
+        if(self.addingNewWorkspace):
             if(len(self.workspaceSettingsDialog.workspaceName.text()) < 1):
-                # Delete workspace
+                print("Workspace name was blank -> deleting this empty workspace")
+                # Delete from file
                 removeWorkspaceFromFile(self.parent.workspaceId)
+                if(self.workspaceSavedToFile):
+                    print("Dialog closed with save button")
+                    self.parent._workspacesData.pop(len(self.parent._workspacesData)-1)
+                    self.updateWorkspaceNames(0)
+                    self.workspaceSavedToFile = False
+                else:
+                    # Delete last element from parent list of workspaces
+                    self.parent._workspacesData.pop(
+                        len(self.parent._workspacesData)-1)
+                    # Reload data in requests list and reload data in workspace comboBox
+                    self.parent.changeWorkspace(
+                        len(self.parent._workspacesData)-1)
+                # Go back to last
+                self.workspaceSpaces.setCurrentIndex(
+                    len(self.parent._workspacesData)-1)
+                # Close adding dialog
+                self.addingNewWorkspace = False
 
     def updateWorkspaceNames(self, index):
         self.workspaceSpaces.clear()
         WORKSPACES = [d["spaceName"] for d in self.parent._workspacesData]
+        print("current workspaces:")
+        for item in WORKSPACES:
+            print(f'name - {item}')
         for option in WORKSPACES:
             self.workspaceSpaces.addItem(option)
         self.workspaceSpaces.addItem("Create new Workspace")
@@ -158,6 +189,7 @@ class WorkspaceSettingsWidget(QWidget):
             id = saveWorkspaceDataToFile(emptyWorkspace)
             self.parent.workspaceId = id
             self.openWorkspaceSettingsDialog()
+            self.addingNewWorkspace = True
             self.workspaceSettingsDialog.saveBtn.setText("Save workspace")
         else:
             self.parent.changeWorkspace(self.workspaceSpaces.currentIndex())

@@ -155,6 +155,24 @@ def removeWorkspaceFromFile(workspaceId):
         return workspacesList
 
 
+def loadUserData():
+    userData = {}
+    # Check if file exists and is array
+    try:
+        with open(resource_path("settings.json"), 'r', encoding='utf-8') as f:
+            try:
+                userData = json.load(f)
+            except Exception as ex:
+                print(ex)
+    except Exception as ex:
+        print(ex)
+    finally:
+        if type(userData) is dict:
+            return userData
+        else:
+            return {}
+
+
 def saveUserIntegration(integration):
     settings = {}
     try:
