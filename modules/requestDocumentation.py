@@ -1,6 +1,7 @@
 from PySide2.QtCore import Qt, Slot
-from PySide2.QtWidgets import (QWidget, QHBoxLayout, QDialog, QLabel,
-                               QGridLayout, QLineEdit, QPushButton)
+from PySide2.QtGui import QTextDocument
+from PySide2.QtWidgets import (QWidget, QHBoxLayout, QDialog, QLabel, QScrollArea, QTabWidget,
+                               QVBoxLayout, QGridLayout, QLineEdit, QPushButton, QTextEdit)
 import requests
 import json
 from utils.fileOperations import saveUserIntegration
@@ -13,7 +14,8 @@ class ErrorDuringConnection(QDialog):
         self.setWindowTitle("Couldn't connect")
         self.setMinimumSize(420, 120)
 
-        notConnnected = QLabel("Couldn't connect to provider - check if url and token are correct")
+        notConnnected = QLabel(
+            "Couldn't connect to provider - check if url and token are correct")
         self.acceptBtn = QPushButton("Ok")
 
         # Set layout
@@ -32,7 +34,8 @@ class SuccessAfterConnection(QDialog):
         self.setWindowTitle("Successfully connected")
         self.setMinimumSize(420, 120)
 
-        accepted = QLabel("Successfully connected to provider - now you can view wiki from requests manager")
+        accepted = QLabel(
+            "Successfully connected to provider - now you can view wiki from requests manager")
         self.acceptBtn = QPushButton("Ok")
 
         # Set layout
@@ -55,11 +58,12 @@ class IntegrationDetails(QWidget):
 
         # repository link
         self.repositoryUrl = QLineEdit()
-        self.repositoryUrl.setPlaceholderText("Repository url")
+        self.repositoryUrl.setPlaceholderE("Repository url")
 
         # user access token
         self.accessToken = QLineEdit()
-        self.accessToken.setPlaceholderText("User access token with permission read_api")
+        self.accessToken.setPlaceholderText(
+            "User access token with permission read_api")
 
         # connect button
         self.connectWithRepositoryBtn = QPushButton("Link with wiki")
@@ -70,7 +74,8 @@ class IntegrationDetails(QWidget):
         # Set final layout
         self.allQGridLayout.addWidget(self.repositoryUrl, 0, 0)
         self.allQGridLayout.addWidget(self.accessToken, 1, 0)
-        self.allQGridLayout.addWidget(self.connectWithRepositoryBtn, 2, 0, Qt.AlignRight)
+        self.allQGridLayout.addWidget(
+            self.connectWithRepositoryBtn, 2, 0, Qt.AlignRight)
 
         self.setLayout(self.allQGridLayout)
 
@@ -86,11 +91,12 @@ class IntegrationDetails(QWidget):
     def linkToRepository(self):
         if(self.integrationProvider == "gitlab"):
             try:
-                spaceName = self.repositoryUrl.text().rsplit("/",2)[1]
-                project = self.repositoryUrl.text().rsplit("/",2)[2]
+                spaceName = self.repositoryUrl.text().rsplit("/", 2)[1]
+                project = self.repositoryUrl.text().rsplit("/", 2)[2]
                 projectPath = spaceName + "%2F" + project
                 url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis"
-                connection = requests.get(url, headers={"User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": self.accessToken.text()})
+                connection = requests.get(url, headers={
+                                          "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": self.accessToken.text()})
                 if(connection.status_code == 200):
                     # Connected
                     parsedBody = json.loads(str(connection.text))
@@ -100,7 +106,9 @@ class IntegrationDetails(QWidget):
                     }
                     # Save connection to user settings
                     saveUserIntegration(integrationObj)
-                    #TODO: Save connection to workspace
+                    # Save workspace integration to workspace settings
+                    self.parent.parent.parent.parent.parent._workspace
+                    # TODO: Save connection to workspace
                     self.SuccessAfterConnection.show()
                     self.SuccessAfterConnection.activateWindow()
                 else:
@@ -128,20 +136,74 @@ class Integration(QDialog):
         self.setLayout(self.allQGridLayout)
 
 
+class DocumentationPages(QWidget):
+    def __init__(self, parent, integrationData):
+        self.parent = parent
+        super(DocumentationPages, self).__init__(parent)
+        self.pagesQGridLayout = QGridLayout()
+        # Get current workspace integration data
+        projectUrl = self.parent.parent.parent.parent._workspacesData[
+            self.parent.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
+        accessToken = self.parent.parent.parent.parent._userData[
+            "integrations"][0]["access_token"]
+        pages = self.connectToGitlab(projectUrl, accessToken)
+        tabWidget = QTabWidget()
+        for index, page in enumerate(pages):
+            formatedPage = QTextEdit()
+            formatedPage.setMarkdown(page["content"])
+            formatedPage.setReadOnly(True)
+            tabWidget.addTab(formatedPage, page["title"])
+
+        # Set layout
+        self.allQGridLayout = QHBoxLayout()
+        self.allQGridLayout.addWidget(tabWidget)
+        self.setLayout(self.allQGridLayout)
+
+    def connectToGitlab(self, repositoryUrl, accessToken):
+        try:
+            spaceName = repositoryUrl.rsplit("/", 2)[1]
+            project = repositoryUrl.rsplit("/", 2)[2]
+            projectPath = spaceName + "%2F" + project
+            url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis"
+            connection = requests.get(url, headers={
+                                    "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
+            if(connection.status_code == 200):
+                # Connected
+                parsedBody = json.loads(str(connection.text))
+                pages = []
+                for page in parsedBody:
+                    url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis/" + page["slug"]
+                    connection = requests.get(url, headers={
+                                    "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
+                    if(connection.status_code == 200):
+                        parsedBody = json.loads(str(connection.text))
+                        pages.append(parsedBody)
+                return(pages)
+            return None
+        except Exception as ex:
+            print("error during connection to wiki with error:" + ex)
+
+
 class RequestDocumentation(QWidget):
     def __init__(self, parent):
         self.parent = parent
-        self._requestDocumentationData = None
         super(RequestDocumentation, self).__init__(parent)
 
         self.connectWithGitlabBtn = QPushButton("Connect with gitlab wiki's")
 
         # Set layout
-        self.requestDocumentationLayout = QHBoxLayout()
-        self.requestDocumentationLayout.addWidget(self.connectWithGitlabBtn)
+        self.requestDocumentationLayout = QVBoxLayout()
+        integration_url = self.parent.parent.parent._workspacesData[self.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
+        integration_workspace_key = self.parent.parent.parent._userData["integrations"][0]["access_token"]
+        if(len(integration_url) > 0 and len(integration_workspace_key) > 0):
+            self.requestDocumentationLayout.addWidget(DocumentationPages(self, {}))
+        else:
+            self.requestDocumentationLayout.addWidget(self.connectWithGitlabBtn)
+
         self.setLayout(self.requestDocumentationLayout)
 
-        self.connectWithGitlabBtn.clicked.connect(lambda provider: self.Integration("gitlab"))
+        self.connectWithGitlabBtn.clicked.connect(
+            lambda provider: self.Integration("gitlab"))
 
     def closeIntegrationSetup(self):
         self.integrationDialog.close()

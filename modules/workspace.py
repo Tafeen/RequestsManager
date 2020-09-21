@@ -12,6 +12,7 @@ from modules.requestDocumentation import RequestDocumentation
 
 class RequestAdvancedEditingWidget(QWidget):
     def __init__(self, parent):
+        self.parent = parent
         super(RequestAdvancedEditingWidget, self).__init__(parent)
 
         self.tabWidget = QTabWidget()
@@ -19,12 +20,12 @@ class RequestAdvancedEditingWidget(QWidget):
         # Request Body
         self.requestBody = QTextEdit("")
 
-        # Request Notes
-        self.requestDocumentation = RequestDocumentation(self)
-
         # Request Headers defaults
         self._headersData = parent._headersData
         self.requestHeadersTable = RequestHeadersTable(self)
+
+        # Request Documentation
+        self.requestDocumentation = RequestDocumentation(self)
 
         self.tabWidget.addTab(self.requestHeadersTable, "Headers")
         self.tabWidget.addTab(self.requestBody, "Body")
@@ -38,6 +39,7 @@ class RequestAdvancedEditingWidget(QWidget):
 
 class RequestWorkspaceWidget(QWidget):
     def __init__(self, parent):
+        self.parent = parent
         super(RequestWorkspaceWidget, self).__init__(parent)
 
         self.defaultRequestHeadersData = {
@@ -64,8 +66,7 @@ class RequestWorkspaceWidget(QWidget):
 
         self.informationQHBoxLayout = QHBoxLayout()
         self.informationQHBoxLayout.addWidget(self.requestName)
-        self.informationQHBoxLayout.addWidget(
-            self.requestLastModificationDate)
+        self.informationQHBoxLayout.addWidget(self.requestLastModificationDate)
 
         # Request type
         TYPE_OPTIONS = (
@@ -93,21 +94,24 @@ class RequestWorkspaceWidget(QWidget):
         # Set request editing widget
         self.RequestAdvancedEditing = RequestAdvancedEditingWidget(self)
 
+        # Set request response widget
+        self.RequestResponse = RequestsResponseWidget(self)
+
         # Set buttons layout
         self.ButtonsLayout = QGridLayout()
         self.ButtonsLayout.addWidget(self.sendRequest, 0, 1)
         self.ButtonsLayout.addWidget(self.saveRequestInList, 0, 2)
         self.ButtonsLayout.addWidget(self.deleteRequestFromList, 0, 3)
 
-        # Set request response widget
-        self.RequestResponse = RequestsResponseWidget(self)
-
+        # Set endpoint layout
         self.endpointQVBoxLayout = QHBoxLayout()
         self.endpointQVBoxLayout.addWidget(self.requestType)
         self.endpointQVBoxLayout.addWidget(self.requestEndpoint)
 
-        self.allQGridLayout = QGridLayout()
         # Set final layout
+        self.allQGridLayout = QGridLayout()
+        self.allQGridLayout.setRowStretch(2, 3)
+        self.allQGridLayout.setRowStretch(3, 2)
         self.allQGridLayout.addLayout(self.informationQHBoxLayout, 0, 0)
         self.allQGridLayout.addLayout(self.endpointQVBoxLayout, 1, 0)
         self.allQGridLayout.addWidget(self.RequestAdvancedEditing, 2, 0)
