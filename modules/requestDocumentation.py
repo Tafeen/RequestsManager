@@ -1,7 +1,6 @@
 from PySide2.QtCore import Qt, Slot
-from PySide2.QtGui import QTextDocument
-from PySide2.QtWidgets import (QWidget, QHBoxLayout, QDialog, QLabel, QScrollArea, QTabWidget,
-                               QVBoxLayout, QGridLayout, QLineEdit, QPushButton, QTextEdit)
+from PySide2.QtWidgets import (QWidget, QHBoxLayout, QDialog, QLabel, QTabWidget, QLayout, QVBoxLayout,
+                               QGridLayout, QLineEdit, QPushButton, QTextEdit)
 import requests
 import json
 from utils.fileOperations import saveUserIntegration
@@ -54,7 +53,6 @@ class IntegrationDetails(QWidget):
         super(IntegrationDetails, self).__init__(parent)
         self.ErrorDuringConnection = ErrorDuringConnection(self)
         self.SuccessAfterConnection = SuccessAfterConnection(self)
-        print(self.integrationProvider)
 
         # repository link
         self.repositoryUrl = QLineEdit()
@@ -99,7 +97,7 @@ class IntegrationDetails(QWidget):
                                           "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": self.accessToken.text()})
                 if(connection.status_code == 200):
                     # Connected
-                    parsedBody = json.loads(str(connection.text))
+                    json.loads(str(connection.text))
                     integrationObj = {
                         "provider": self.integrationProvider,
                         "access_token": self.accessToken.text()
@@ -137,27 +135,50 @@ class Integration(QDialog):
 
 
 class DocumentationPages(QWidget):
-    def __init__(self, parent, integrationData):
+    def __init__(self, parent):
         self.parent = parent
         super(DocumentationPages, self).__init__(parent)
-        self.pagesQGridLayout = QGridLayout()
-        # Get current workspace integration data
+        self.setupLayout()
+
+    def reloadLayout(self, tf):
+        print(f'tf: {tf}')
+        print("Layout reloaded documentation page")
+        if(tf):
+            self.lay = QHBoxLayout()
+            self.lab = QLabel("Yes") 
+            self.lay.addWidget(self.lab)
+            self.setLayout(self.lay)
+        else:
+            self.lay = QHBoxLayout()
+            self.lab = QLabel("No")
+            self.lay.addWidget(self.lab)
+            self.setLayout(self.lay)
+
+    def setupLayout(self):
+        # Get data
         projectUrl = self.parent.parent.parent.parent._workspacesData[
-            self.parent.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
+                self.parent.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
         accessToken = self.parent.parent.parent.parent._userData[
             "integrations"][0]["access_token"]
+        print(f'project url: {projectUrl}')
         pages = self.connectToGitlab(projectUrl, accessToken)
-        tabWidget = QTabWidget()
-        for index, page in enumerate(pages):
-            formatedPage = QTextEdit()
-            formatedPage.setMarkdown(page["content"])
-            formatedPage.setReadOnly(True)
-            tabWidget.addTab(formatedPage, page["title"])
+        allQGridLayout = QGridLayout()
+        if(pages):
+            print("Got Wiki")
+            tabWidget = QTabWidget()
+            for index, page in enumerate(pages):
+                formatedPage = QTextEdit()
+                formatedPage.setMarkdown(page["content"])
+                formatedPage.setReadOnly(True)
+                tabWidget.addTab(formatedPage, page["title"])
 
-        # Set layout
-        self.allQGridLayout = QHBoxLayout()
-        self.allQGridLayout.addWidget(tabWidget)
-        self.setLayout(self.allQGridLayout)
+            # Set layout
+            allQGridLayout.addWidget(tabWidget)
+        else:
+            print("Didnt get Wiki")
+            # Set layout
+            allQGridLayout.addWidget(QLabel("Couldn't get wiki for this workspace - check if project url and token for selected provider are correct"))
+        self.setLayout(allQGridLayout)
 
     def connectToGitlab(self, repositoryUrl, accessToken):
         try:
@@ -188,22 +209,23 @@ class RequestDocumentation(QWidget):
     def __init__(self, parent):
         self.parent = parent
         super(RequestDocumentation, self).__init__(parent)
-
-        self.connectWithGitlabBtn = QPushButton("Connect with gitlab wiki's")
-
-        # Set layout
         self.requestDocumentationLayout = QVBoxLayout()
+        self.setupLayout()
+
+    def setupLayout(self):
         integration_url = self.parent.parent.parent._workspacesData[self.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
         integration_workspace_key = self.parent.parent.parent._userData["integrations"][0]["access_token"]
         if(len(integration_url) > 0 and len(integration_workspace_key) > 0):
-            self.requestDocumentationLayout.addWidget(DocumentationPages(self, {}))
+            self.documentationScreen = DocumentationPages(self)
+            self.requestDocumentationLayout.addWidget(self.documentationScreen)
         else:
-            self.requestDocumentationLayout.addWidget(self.connectWithGitlabBtn)
-
+            self.documentationScreen = QPushButton("Connect with gitlab wiki's")
+            self.documentationScreen.clicked.connect(
+                lambda provider: self.Integration("gitlab"))
+            self.requestDocumentationLayout.addWidget(self.documentationScreen)
         self.setLayout(self.requestDocumentationLayout)
-
-        self.connectWithGitlabBtn.clicked.connect(
-            lambda provider: self.Integration("gitlab"))
+        # Update size of layout - specially needed after rebuilding widget
+        self.requestDocumentationLayout.setSizeConstraint(QLayout.SetMinimumSize)
 
     def closeIntegrationSetup(self):
         self.integrationDialog.close()

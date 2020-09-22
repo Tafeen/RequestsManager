@@ -1,7 +1,5 @@
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
-                               QCheckBox, QLabel, QPushButton, QGridLayout,
-                               QDialog, QWidget, QComboBox, QTabWidget)
+from PySide2.QtWidgets import (QLineEdit, QLabel, QPushButton,
+                               QGridLayout, QDialog, QWidget)
 
 
 class integrationWikiWidget(QWidget):

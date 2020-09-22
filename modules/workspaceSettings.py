@@ -1,7 +1,5 @@
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
-                               QCheckBox, QLabel, QPushButton, QGridLayout,
-                               QDialog, QWidget, QComboBox, QTabWidget)
+from PySide2.QtWidgets import (QLineEdit, QCheckBox, QLabel, QPushButton, QGridLayout,
+                               QDialog, QWidget, QComboBox)
 from utils.fileOperations import saveWorkspaceDataToFile, removeWorkspaceFromFile
 
 
@@ -136,6 +134,11 @@ class WorkspaceSettingsWidget(QWidget):
         self.updateWorkspaceNames(wasAtIndex)
         saveWorkspaceDataToFile(self.parent._workspacesData[wasAtIndex])
 
+        # Update documentation layout
+        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.hide()
+        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.setupLayout()
+        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.show()
+
         if(self.addingNewWorkspace):
             self.workspaceSettingsDialog.close()
 
@@ -166,9 +169,10 @@ class WorkspaceSettingsWidget(QWidget):
     def updateWorkspaceNames(self, index):
         self.workspaceSpaces.clear()
         WORKSPACES = [d["spaceName"] for d in self.parent._workspacesData]
-        print("current workspaces:")
-        for item in WORKSPACES:
-            print(f'name - {item}')
+        # Dev print
+        # print("current workspaces:")
+        # for item in WORKSPACES:
+        #     print(f'name - {item}')
         for option in WORKSPACES:
             self.workspaceSpaces.addItem(option)
         self.workspaceSpaces.addItem("Create new Workspace")
