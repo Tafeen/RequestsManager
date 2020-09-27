@@ -198,3 +198,29 @@ def saveUserIntegration(integration):
     finally:
         with open(resource_path("settings.json"), 'w', encoding='utf-8') as f:
             json.dump(settings, f, ensure_ascii=False, indent=4)
+
+def saveUserWorkspaceToFile(workspace):
+    settings = {}
+    try:
+        with open(resource_path("settings.json"), 'r', encoding='utf-8') as f:
+            try:
+                settings = json.load(f)
+                if(type(settings) is dict and len(settings) > 0):
+                    key = next((i for i, item in enumerate(settings["workspaces"]) if item["id"] == workspace['id']), None)
+                    if(key is not None):
+                        settings["workspaces"][key] = workspace
+                    else:
+                        settings["workspaces"].append(workspace)
+                else:
+                    settings = {}
+                    settings["workspaces"] = []
+                    settings["workspaces"].append(workspace)
+            except Exception as ex:
+                print(ex)
+    except Exception as ex:
+        print("File could not be open" + ex)
+        settings["workspaces"] = []
+        settings["workspaces"].append(workspace)
+    finally:
+        with open(resource_path("settings.json"), 'w', encoding='utf-8') as f:
+            json.dump(settings, f, ensure_ascii=False, indent=4)

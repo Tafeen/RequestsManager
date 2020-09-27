@@ -118,7 +118,7 @@ class RequestsMainWidget(QWidget):
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
                 requestHeaders)
             self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setPlainText(
-                requestBody)
+                requestBody)        
 
     def saveRequest(self):
         # Current data
@@ -190,6 +190,7 @@ class RequestsMainWidget(QWidget):
             self.requestsListWidget.requestsListModel.load_data([])
             self.clearWorkspace()
         print(workspaceId)
+        self.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.reloadDocumentation()   
 
 
 class MainWindow(QMainWindow):

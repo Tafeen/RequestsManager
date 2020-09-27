@@ -1,6 +1,7 @@
-from PySide2.QtWidgets import (QLineEdit, QCheckBox, QLabel, QPushButton, QGridLayout,
+from PySide2.QtCore import Slot
+from PySide2.QtWidgets import (QLineEdit, QRadioButton, QLabel, QPushButton, QGridLayout,
                                QDialog, QWidget, QComboBox)
-from utils.fileOperations import saveWorkspaceDataToFile, removeWorkspaceFromFile
+from utils.fileOperations import saveWorkspaceDataToFile, removeWorkspaceFromFile, saveUserWorkspaceToFile
 
 
 class integrationWikiWidget(QWidget):
@@ -8,28 +9,30 @@ class integrationWikiWidget(QWidget):
         self.parent = parent
         super(integrationWikiWidget, self).__init__(parent)
         self._currentWorkspaceData = self.parent._currentWorkspaceData
-
+        # self.selectedIntegrationName = "gitlab"
         self.gitlab = next(
             (item for item in self._currentWorkspaceData["integrations"]["wiki"] if item["provider"] == "gitlab"), None)
         gitlabUrl = self.gitlab.get("projectUrl") if (
             self.gitlab is not None) else ""
-        self.gitlabCheckBox = QCheckBox("Gitlab")
+        self.gitlabRadioButton = QRadioButton("gitlab")
         self.gitlabURLinput = QLineEdit(gitlabUrl)
-
         self.github = next(
             (item for item in self._currentWorkspaceData["integrations"]["wiki"] if item["provider"] == "github"), None)
         githubUrl = self.github.get("projectUrl") if (
             self.github is not None) else ""
-        self.githubCheckBox = QCheckBox("Github")
+        self.githubRadioButton = QRadioButton("github")
         self.githubURLinput = QLineEdit(githubUrl)
 
         # Set Layout
         self.allQGridLayout = QGridLayout()
-        self.allQGridLayout.addWidget(self.gitlabCheckBox, 0, 0)
+        self.allQGridLayout.addWidget(self.githubRadioButton, 0, 0)
         self.allQGridLayout.addWidget(self.gitlabURLinput, 0, 1)
-        self.allQGridLayout.addWidget(self.githubCheckBox, 1, 0)
+        self.allQGridLayout.addWidget(self.gitlabRadioButton, 1, 0)
         self.allQGridLayout.addWidget(self.githubURLinput, 1, 1)
         self.setLayout(self.allQGridLayout)
+
+        self.githubRadioButton.toggled.connect(self.onRadioBtn)
+        self.gitlabRadioButton.toggled.connect(self.onRadioBtn)
 
     def integrationList(self):
         integrations = []
@@ -48,6 +51,11 @@ class integrationWikiWidget(QWidget):
             integrations.append(githubIntegrationObj)
         return(integrations)
 
+    def onRadioBtn(self):
+        radioBtn = self.sender()
+        if radioBtn.isChecked():
+            self.selectedIntegrationName = radioBtn.text()
+
 
 class WorkspaceSettingsDialog(QDialog):
     def __init__(self, parent):
@@ -60,6 +68,7 @@ class WorkspaceSettingsDialog(QDialog):
         self.workspaceName = QLineEdit(self._currentWorkspaceData["spaceName"])
         self.workspaceName.setPlaceholderText("Workspace name")
 
+        self.selectedIntegration = "gitlab"
         self.integrationsWiki = integrationWikiWidget(self)
 
         self.saveBtn = QPushButton("Update workspace")
@@ -73,7 +82,8 @@ class WorkspaceSettingsDialog(QDialog):
         self.allQGridLayout.addWidget(self.saveBtn, 4, 5)
         self.setLayout(self.allQGridLayout)
 
-        self.saveBtn.clicked.connect(self.parent.saveWorkspace)
+        self.saveBtn.clicked.connect(
+            lambda integrationsList: self.parent.saveWorkspace(self.integrationsWiki.integrationList(), self.integrationsWiki.selectedIntegrationName))
 
     def closeEvent(self, event):
         print("Closed workspaceSettings")
@@ -113,10 +123,9 @@ class WorkspaceSettingsWidget(QWidget):
         self.workspaceSettingsDialog.show()
         self.workspaceSettingsDialog.activateWindow()
 
-    def saveWorkspace(self):
+    def saveWorkspace(self, integrationsList, selectedDocumentation):
         # Update integrations
         self.workspaceSavedToFile = True
-        integrationsList = self.workspaceSettingsDialog.integrationsWiki.integrationList()
         for integrationObj in enumerate(integrationsList):
             key = next((i for i, item in enumerate(self.parent._workspacesData[self.workspaceSpaces.currentIndex(
             )]["integrations"]["wiki"]) if item["provider"] == integrationObj[1]["provider"]), None)
@@ -128,16 +137,34 @@ class WorkspaceSettingsWidget(QWidget):
                 )]["integrations"]["wiki"].append(integrationObj[1])
 
         # Update name
-        self.parent._workspacesData[self.workspaceSpaces.currentIndex(
-        )]["spaceName"] = self.workspaceSettingsDialog.workspaceName.text()
+        if(hasattr(self, "updateName")):
+            self.parent._workspacesData[self.workspaceSpaces.currentIndex(
+            )]["spaceName"] = self.workspaceSettingsDialog.workspaceName.text()
+
         wasAtIndex = self.workspaceSpaces.currentIndex()
         self.updateWorkspaceNames(wasAtIndex)
+
+        # Save workspace
         saveWorkspaceDataToFile(self.parent._workspacesData[wasAtIndex])
 
+        # Save user settings
+        workspaceIntegrationUser = {
+            "id": wasAtIndex,
+            "integration_provider": selectedDocumentation
+        }
+
+        key = next((i for i, item in enumerate(
+            self.parent._userData["workspaces"]) if item["id"] == wasAtIndex), None)
+        if(key is not None):
+            self.parent._userData["workspaces"][key] = workspaceIntegrationUser
+        else:
+            self.parent._userData[self.workspaceSpaces.currentIndex(
+            )]["integrations"][key].append(workspaceIntegrationUser)
+
+        saveUserWorkspaceToFile(self.parent._userData["workspaces"][wasAtIndex])
+
         # Update documentation layout
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.hide()
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.setupLayout()
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.show()
+        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.reloadDocumentation()
 
         if(self.addingNewWorkspace):
             self.workspaceSettingsDialog.close()
@@ -150,7 +177,8 @@ class WorkspaceSettingsWidget(QWidget):
                 removeWorkspaceFromFile(self.parent.workspaceId)
                 if(self.workspaceSavedToFile):
                     print("Dialog closed with save button")
-                    self.parent._workspacesData.pop(len(self.parent._workspacesData)-1)
+                    self.parent._workspacesData.pop(
+                        len(self.parent._workspacesData)-1)
                     self.updateWorkspaceNames(0)
                     self.workspaceSavedToFile = False
                 else:
