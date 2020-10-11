@@ -164,10 +164,12 @@ class RequestsMainWidget(QWidget):
         if self.RequestEditorWidget.requestId is None:
             requestId = saveRequestDataToFile(
                 self.requestDict, self.workspaceId)
+            print(requestId)
             self.requestDict["id"] = requestId
             self._requestsData.append(self.requestDict)
             # Select last item in list
             self.requestsListWidget.selectRow(len(self._requestsData)-1)
+            self.RequestEditorWidget.requestId = requestId
             print(f'Saved request with id: {requestId}')
         else:
             self.requestDict["id"] = requestId
@@ -177,7 +179,7 @@ class RequestsMainWidget(QWidget):
              .requestLastModificationDate
              .setText("Just updated"))
             print(f'Updated request with id: {requestId}')
-
+        print(f'Ilosc requestow: {len(self._requestsData)}')
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
 
     def deleteRequest(self):

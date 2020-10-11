@@ -10,9 +10,9 @@ class NewRequestListModel(QAbstractListModel):
         self.parent = parent
         super(NewRequestListModel, self).__init__(parent)
         self.load_data(parent.parent._requestsData)
-        self._requestsData = parent.parent._requestsData
 
     def load_data(self, data):
+        self._requestsData = self.parent.parent._requestsData
         self.row_count = len(data)
         self.dataChanged.emit(QModelIndex(), QModelIndex())
 
