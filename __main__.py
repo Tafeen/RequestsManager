@@ -218,6 +218,8 @@ class RequestsMainWidget(QWidget):
             self.requestsListWidget.requestsListModel._requestsData = []
             self.requestsListWidget.requestsListModel.load_data([])
             self.clearWorkspace()
+        print(workspaceId)
+        # self.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.reloadDocumentation()   
 
 
 class MainWindow(QMainWindow):

@@ -56,7 +56,7 @@ class IntegrationDetails(QWidget):
 
         # repository link
         self.repositoryUrl = QLineEdit()
-        self.repositoryUrl.setPlaceholderE("Repository url")
+        self.repositoryUrl.setPlaceholderText("Repository url")
 
         # user access token
         self.accessToken = QLineEdit()
@@ -105,7 +105,15 @@ class IntegrationDetails(QWidget):
                     # Save connection to user settings
                     saveUserIntegration(integrationObj)
                     # Save workspace integration to workspace settings
-                    self.parent.parent.parent.parent.parent._workspace
+                    integrations = []
+                    gitlabIntegrationObj = {
+                        "provider": "gitlab",
+                        "projectUrl": self.repositoryUrl.text()
+                    }
+                    integrations.append(gitlabIntegrationObj)
+                    print("Integration provider =" + self.integrationProvider)
+                    self.parent.parent.parent.parent.parent.workspaceSettingsWidget.saveWorkspace(integrations, self.integrationProvider)
+                    self.parent.parent.reloadDocumentation()
                     # TODO: Save connection to workspace
                     self.SuccessAfterConnection.show()
                     self.SuccessAfterConnection.activateWindow()
@@ -135,17 +143,16 @@ class Integration(QDialog):
 
 
 class DocumentationPages(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, integrationProvider, integrationURL, integrationKEY):
         self.parent = parent
         super(DocumentationPages, self).__init__(parent)
-        self.setupLayout()
+        self.setupLayout(integrationProvider, integrationURL, integrationKEY)
 
     def reloadLayout(self, tf):
-        print(f'tf: {tf}')
         print("Layout reloaded documentation page")
         if(tf):
             self.lay = QHBoxLayout()
-            self.lab = QLabel("Yes") 
+            self.lab = QLabel("Yes")
             self.lay.addWidget(self.lab)
             self.setLayout(self.lay)
         else:
@@ -154,14 +161,9 @@ class DocumentationPages(QWidget):
             self.lay.addWidget(self.lab)
             self.setLayout(self.lay)
 
-    def setupLayout(self):
-        # Get data
-        projectUrl = self.parent.parent.parent.parent._workspacesData[
-                self.parent.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
-        accessToken = self.parent.parent.parent.parent._userData[
-            "integrations"][0]["access_token"]
-        print(f'project url: {projectUrl}')
-        pages = self.connectToGitlab(projectUrl, accessToken)
+    def setupLayout(self, integrationProvider, integrationURL, integrationKEY):
+        pages = self.linkToRepository(
+            integrationProvider, integrationURL, integrationKEY)
         allQGridLayout = QGridLayout()
         if(pages):
             print("Got Wiki")
@@ -177,32 +179,39 @@ class DocumentationPages(QWidget):
         else:
             print("Didnt get Wiki")
             # Set layout
-            allQGridLayout.addWidget(QLabel("Couldn't get wiki for this workspace - check if project url and token for selected provider are correct"))
+            allQGridLayout.addWidget(QLabel(
+                "Couldn't get wiki for this workspace - check if project url and token for selected provider are correct"))
         self.setLayout(allQGridLayout)
 
-    def connectToGitlab(self, repositoryUrl, accessToken):
-        try:
-            spaceName = repositoryUrl.rsplit("/", 2)[1]
-            project = repositoryUrl.rsplit("/", 2)[2]
-            projectPath = spaceName + "%2F" + project
-            url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis"
-            connection = requests.get(url, headers={
-                                    "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
-            if(connection.status_code == 200):
-                # Connected
-                parsedBody = json.loads(str(connection.text))
-                pages = []
-                for page in parsedBody:
-                    url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis/" + page["slug"]
-                    connection = requests.get(url, headers={
-                                    "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
-                    if(connection.status_code == 200):
-                        parsedBody = json.loads(str(connection.text))
-                        pages.append(parsedBody)
-                return(pages)
-            return None
-        except Exception as ex:
-            print("error during connection to wiki with error:" + ex)
+    def linkToRepository(self, integrationProvider, repositoryUrl, accessToken):
+        if(integrationProvider == "gitlab"):
+            try:
+                spaceName = repositoryUrl.rsplit("/", 2)[1]
+                project = repositoryUrl.rsplit("/", 2)[2]
+                projectPath = spaceName + "%2F" + project
+                url = "https://gitlab.com/api/v4/projects/" + projectPath + "/wikis"
+                connection = requests.get(url, headers={
+                                          "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
+                if(connection.status_code == 200):
+                    # Connected
+                    parsedBody = json.loads(str(connection.text))
+                    pages = []
+                    for page in parsedBody:
+                        url = "https://gitlab.com/api/v4/projects/" + \
+                            projectPath + "/wikis/" + page["slug"]
+                        connection = requests.get(url, headers={
+                            "User-Agent": "RequestsManager.0.2020.0.2", "PRIVATE-TOKEN": accessToken})
+                        if(connection.status_code == 200):
+                            parsedBody = json.loads(str(connection.text))
+                            pages.append(parsedBody)
+                    return(pages)
+                else:
+                    print("network error: " + connection.status_code)
+            except Exception as ex:
+                print("error during connection")
+                print(ex)
+        else:
+            print("This provider is not available yet")
 
 
 class RequestDocumentation(QWidget):
@@ -225,7 +234,11 @@ class RequestDocumentation(QWidget):
         #     self.requestDocumentationLayout.addWidget(self.documentationScreen)
         self.setLayout(self.requestDocumentationLayout)
         # Update size of layout - specially needed after rebuilding widget
-        self.requestDocumentationLayout.setSizeConstraint(QLayout.SetMinimumSize)
+        self.requestDocumentationLayout.setSizeConstraint(
+            QLayout.SetMinimumSize)
+
+    def reloadDocumentation(self):
+        self.setupLayout()
 
     def closeIntegrationSetup(self):
         self.integrationDialog.close()

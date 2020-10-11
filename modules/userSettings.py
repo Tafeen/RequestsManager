@@ -1,5 +1,6 @@
 from PySide2.QtWidgets import (QLineEdit, QLabel, QPushButton,
                                QGridLayout, QDialog, QWidget)
+from utils.fileOperations import saveUserIntegration
 
 
 class integrationWikiWidget(QWidget):
@@ -19,22 +20,10 @@ class integrationWikiWidget(QWidget):
         self.allQGridLayout.addWidget(self.githubURLinput, 1, 1)
         self.setLayout(self.allQGridLayout)
 
-    # def integrationList(self):
-    #     integrations = []
-    #     if(self.gitlab is not None or len(self.gitlabURLinput.text()) > 0):
-    #         gitlabIntegrationObj = {
-    #             "provider": "gitlab",
-    #             "projectUrl": self.gitlabURLinput.text()
-    #         }
-    #         integrations.append(gitlabIntegrationObj)
-
-    #     if(self.github is not None or len(self.githubURLinput.text()) > 0):
-    #         githubIntegrationObj = {
-    #             "provider": "github",
-    #             "projectUrl": self.githubURLinput.text()
-    #         }
-    #         integrations.append(githubIntegrationObj)
-    #     return(integrations)
+        integrations = self.parent.parent.parent._userData["integrations"]
+        for integration in integrations:
+            provider = getattr(self, integration["provider"]+"URLinput")
+            provider.setText(integration["access_token"])
 
 
 class userSettingsDialog(QDialog):
@@ -56,8 +45,29 @@ class userSettingsDialog(QDialog):
         self.allQGridLayout.addWidget(self.saveBtn, 3, 5)
         self.setLayout(self.allQGridLayout)
 
-        # self.saveBtn.clicked.connect(self.parent.saveWorkspace)
-        # Save user settings
+        self.saveBtn.clicked.connect(self.saveIntegrations)
+
+    def saveIntegrations(self):
+        integrationProviders = (
+            "gitlab",
+            "github"
+        )
+        for provider in integrationProviders:
+            ac_tkn = getattr(self.integrationsWiki, provider+"URLinput")
+            # Save user settings
+            integrationObj = {
+                "provider": provider,
+                "access_token": ac_tkn.text()
+            }
+            key = next((i for i, item in enumerate(
+                self.parent.parent._userData["integrations"]) if item["provider"] == provider), None)
+            if(key is not None):
+                self.parent.parent._userData["integrations"][key] = integrationObj
+            else:
+                self.parent.parent._userData["integrations"].append(integrationObj)
+
+            saveUserIntegration(integrationObj)
+        self.parent.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.reloadDocumentation()
 
 
 class UserSettingsWidget(QWidget):
