@@ -5,9 +5,9 @@ from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
                                QWidget, QComboBox, QTabWidget)
 
 from utils.requestWrapper import requestWrapper
-from modules.headersTable import RequestHeadersTable
-from modules.response import RequestsResponseWidget
-from modules.requestDocumentation import RequestDocumentation
+from modules.requestEditor.headersTable import RequestHeadersTable
+from modules.requestEditor.response import RequestsResponseWidget
+from modules.requestEditor.requestDocumentation import RequestDocumentation
 
 
 class RequestAdvancedEditingWidget(QWidget):
@@ -37,10 +37,10 @@ class RequestAdvancedEditingWidget(QWidget):
         self.setLayout(allQGridLayout)
 
 
-class RequestWorkspaceWidget(QWidget):
+class RequestEditorWidget(QWidget):
     def __init__(self, parent):
         self.parent = parent
-        super(RequestWorkspaceWidget, self).__init__(parent)
+        super(RequestEditorWidget, self).__init__(parent)
 
         self.defaultRequestHeadersData = {
             "User-Agent": "RequestsManager.0.2020.0.2",

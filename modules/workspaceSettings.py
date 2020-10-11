@@ -1,6 +1,7 @@
-from PySide2.QtWidgets import (QLineEdit, QCheckBox, QLabel, QPushButton, QGridLayout,
+from PySide2.QtWidgets import (QLineEdit, QRadioButton, QLabel, QPushButton, QGridLayout,
                                QDialog, QWidget, QComboBox)
 from utils.fileOperations import saveWorkspaceDataToFile, removeWorkspaceFromFile
+import json
 
 
 class integrationWikiWidget(QWidget):
@@ -9,18 +10,21 @@ class integrationWikiWidget(QWidget):
         super(integrationWikiWidget, self).__init__(parent)
         self._currentWorkspaceData = self.parent._currentWorkspaceData
 
+        self.wikiDict = next(
+            (item for item in self._currentWorkspaceData["integrations"] if item["integrationType"] == "wiki"), None)
+
         self.gitlab = next(
-            (item for item in self._currentWorkspaceData["integrations"]["wiki"] if item["provider"] == "gitlab"), None)
+            (item for item in self.wikiDict["data"] if item["provider"] == "gitlab"), None)
         gitlabUrl = self.gitlab.get("projectUrl") if (
             self.gitlab is not None) else ""
-        self.gitlabCheckBox = QCheckBox("Gitlab")
+        self.gitlabCheckBox = QRadioButton("Gitlab")
         self.gitlabURLinput = QLineEdit(gitlabUrl)
 
         self.github = next(
-            (item for item in self._currentWorkspaceData["integrations"]["wiki"] if item["provider"] == "github"), None)
+            (item for item in self.wikiDict["data"] if item["provider"] == "github"), None)
         githubUrl = self.github.get("projectUrl") if (
             self.github is not None) else ""
-        self.githubCheckBox = QCheckBox("Github")
+        self.githubCheckBox = QRadioButton("Github")
         self.githubURLinput = QLineEdit(githubUrl)
 
         # Set Layout
@@ -32,20 +36,15 @@ class integrationWikiWidget(QWidget):
         self.setLayout(self.allQGridLayout)
 
     def integrationList(self):
-        integrations = []
-        if(self.gitlab is not None or len(self.gitlabURLinput.text()) > 0):
-            gitlabIntegrationObj = {
-                "provider": "gitlab",
-                "projectUrl": self.gitlabURLinput.text()
-            }
-            integrations.append(gitlabIntegrationObj)
-
-        if(self.github is not None or len(self.githubURLinput.text()) > 0):
-            githubIntegrationObj = {
-                "provider": "github",
-                "projectUrl": self.githubURLinput.text()
-            }
-            integrations.append(githubIntegrationObj)
+        gitlabIntegrationObj = {
+            "provider": "gitlab",
+            "projectUrl": self.gitlabURLinput.text()
+        }
+        githubIntegrationObj = {
+            "provider": "github",
+            "projectUrl": self.githubURLinput.text()
+        }
+        integrations = [gitlabIntegrationObj, githubIntegrationObj]
         return(integrations)
 
 
@@ -117,15 +116,11 @@ class WorkspaceSettingsWidget(QWidget):
         # Update integrations
         self.workspaceSavedToFile = True
         integrationsList = self.workspaceSettingsDialog.integrationsWiki.integrationList()
-        for integrationObj in enumerate(integrationsList):
+        for index, integrationObj in enumerate(integrationsList):
             key = next((i for i, item in enumerate(self.parent._workspacesData[self.workspaceSpaces.currentIndex(
-            )]["integrations"]["wiki"]) if item["provider"] == integrationObj[1]["provider"]), None)
-            if(key is not None):
-                self.parent._workspacesData[self.workspaceSpaces.currentIndex(
-                )]["integrations"]["wiki"][key] = integrationObj[1]
-            else:
-                self.parent._workspacesData[self.workspaceSpaces.currentIndex(
-                )]["integrations"]["wiki"].append(integrationObj[1])
+            )]["integrations"]) if item["integrationType"] == "wiki"), None)
+            self.parent._workspacesData[self.workspaceSpaces.currentIndex(
+            )]["integrations"][key]["data"][index] = integrationObj
 
         # Update name
         self.parent._workspacesData[self.workspaceSpaces.currentIndex(
@@ -134,10 +129,12 @@ class WorkspaceSettingsWidget(QWidget):
         self.updateWorkspaceNames(wasAtIndex)
         saveWorkspaceDataToFile(self.parent._workspacesData[wasAtIndex])
 
-        # Update documentation layout
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.hide()
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.setupLayout()
-        self.parent.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.show()
+        # Check if documentation screen has loaded before
+        if(hasattr(self.parent.RequestEditorWidget.RequestAdvancedEditing.requestDocumentation, "documentationScreen")):
+            # Update documentation layout
+            self.parent.RequestEditorWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.hide()
+            self.parent.RequestEditorWidget.RequestAdvancedEditing.requestDocumentation.setupLayout()
+            self.parent.RequestEditorWidget.RequestAdvancedEditing.requestDocumentation.documentationScreen.show()
 
         if(self.addingNewWorkspace):
             self.workspaceSettingsDialog.close()
@@ -150,7 +147,8 @@ class WorkspaceSettingsWidget(QWidget):
                 removeWorkspaceFromFile(self.parent.workspaceId)
                 if(self.workspaceSavedToFile):
                     print("Dialog closed with save button")
-                    self.parent._workspacesData.pop(len(self.parent._workspacesData)-1)
+                    self.parent._workspacesData.pop(
+                        len(self.parent._workspacesData)-1)
                     self.updateWorkspaceNames(0)
                     self.workspaceSavedToFile = False
                 else:
@@ -184,9 +182,21 @@ class WorkspaceSettingsWidget(QWidget):
             print("Creating new workspace")
             emptyWorkspace = {
                 "spaceName": "",
-                "integrations": {
-                    "wiki": []
-                },
+                "integrations": [
+                    {
+                        "integrationType": "wiki",
+                        "data": [
+                            {
+                                "provider": "gitlab",
+                                "projectUrl": ""
+                            },
+                            {
+                                "provider": "github",
+                                "projectUrl": ""
+                            }
+                        ]
+                    }
+                ],
                 "requests": []
             }
             self.parent._workspacesData.append(emptyWorkspace)

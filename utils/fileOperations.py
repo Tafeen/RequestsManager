@@ -20,7 +20,7 @@ def loadWorkspaces():
     workspacesList = []
     # Check if file exists and is array
     try:
-        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 workspacesList = json.load(f)
             except Exception as ex:
@@ -37,7 +37,7 @@ def loadWorkspaces():
 def saveWorkspaceDataToFile(workspace):
     lastId = 0
     try:
-        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             workspacesList = json.load(f)
             if(type(workspacesList) is list and len(workspacesList) > 0):
                 if "id" in workspace:
@@ -45,18 +45,19 @@ def saveWorkspaceDataToFile(workspace):
                         workspacesList) if d["id"] == workspace["id"]), None)
                     workspacesList[workspace_index] = workspace
                 else:
-                    lastId = max(workspace["id"] for workspace in workspacesList)
+                    lastId = max(workspace["id"]
+                                 for workspace in workspacesList)
                     workspace["id"] = lastId + 1
                     workspacesList.append(workspace)
             else:
                 # Workspace is invalid or is empty
                 workspacesList = []
     except Exception as ex:
-        print("Could not open file")
+        print("saveWorkspaceDataToFile: Could not open file")
         print(ex)
     finally:
         # Save to file
-        with open(resource_path("nexgenRequests.json"), 'w', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
         return(workspace["id"])
 
@@ -66,51 +67,36 @@ def saveRequestDataToFile(request, workspaceId):
     requestsList.append(request)
     request["lastModificationDate"] = datetime.datetime.utcnow().strftime(
         '%Y-%m-%dT%H:%M:%SZ')
-    lastId = 0
+
+    workspacesList = []
+    workspace = {
+        "id": 0,
+        "spaceName": "InitialWorkspace"
+    }
+    request["id"] = 0
+    workspace["requests"] = [request]
+    workspacesList.append(workspace)
     try:
-        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 workspacesList = json.load(f)
+                # Check if workspaces are list
                 if(type(workspacesList) is list and len(workspacesList) > 0):
-                    requestsList = workspacesList[workspaceId]["requests"]         
+                    # Check if requests are list
+                    requestsList = workspacesList[workspaceId]["requests"]
                     if(type(requestsList) is list and len(requestsList) > 0):
-                        if "id" in request:
-                            request_index = next((index for (index, d) in enumerate(
-                            requestsList) if d["id"] == request["id"]), None)
-                            requestsList[request_index] = request
-                        else:
-                            print("there was no id in request obj")
-                            lastId = max(request["id"]
-                                         for request in requestsList)
-                            request["id"] = lastId + 1
-                            requestsList.append(request)
-                            workspacesList[workspaceId]["requests"] = requestsList
-                    else:
-                        # RequestsList is invalid or is empty
-                        requestsList = []
-                        request["id"] = lastId
-                        requestsList.append(request)
-                        workspacesList[workspaceId]["requests"] = requestsList
-                else:
-                    # Workspace is invalid or is empty
-                    workspacesList = []
-                    workspace = {
-                        "id": 0,
-                        "name": "My first workspace"
-                    }
-                    workspace["requests"] = [request]
-                    workspacesList.append(workspace)
+                        request_index = next((index for (index, d) in enumerate(requestsList) if d["id"] == request["id"]), None)
+                        requestsList[request_index] = request
             except Exception as ex:
                 # file is not json
-                print("File is not correct json type")
+                print("saveRequestDataToFile: File is not correct json type")
                 print(ex)
     except Exception as ex:
-        print("Could not open file")
+        print("saveRequestDataToFile: Could not open file")
         print(ex)
     finally:
         # Save to file
-        print(request)
-        with open(resource_path("nexgenRequests.json"), 'w', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
         return(request["id"])
 
@@ -118,20 +104,21 @@ def saveRequestDataToFile(request, workspaceId):
 def removeRequestFromFile(requestId, workspaceId):
     workspacesList = []
     try:
-        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 workspacesList = json.load(f)
-                requestsList = workspacesList[workspaceId]["requests"]         
-                requestsList = list(filter(lambda i: i['id'] != requestId, requestsList))
+                requestsList = workspacesList[workspaceId]["requests"]
+                requestsList = list(
+                    filter(lambda i: i['id'] != requestId, requestsList))
                 workspacesList[workspaceId]["requests"] = requestsList
             except Exception as ex:
                 # file is not json
-                print("File is not correct json type")
+                print("removeRequestFromFile: File is not correct json type")
                 print(ex)
     except Exception as ex:
         print(ex)
     finally:
-        with open(resource_path("nexgenRequests.json"), 'w', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
         return requestsList
 
@@ -139,18 +126,19 @@ def removeRequestFromFile(requestId, workspaceId):
 def removeWorkspaceFromFile(workspaceId):
     workspacesList = []
     try:
-        with open(resource_path("nexgenRequests.json"), 'r', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
-                workspacesList = json.load(f)      
-                workspacesList = list(filter(lambda i: i['id'] != workspaceId, workspacesList))
+                workspacesList = json.load(f)
+                workspacesList = list(
+                    filter(lambda i: i['id'] != workspaceId, workspacesList))
             except Exception as ex:
                 # file is not json
-                print("File is not correct json type")
+                print("removeWorkspaceFromFile: File is not correct json type")
                 print(ex)
     except Exception as ex:
         print(ex)
     finally:
-        with open(resource_path("nexgenRequests.json"), 'w', encoding='utf-8') as f:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
         return workspacesList
 
@@ -180,7 +168,8 @@ def saveUserIntegration(integration):
             try:
                 settings = json.load(f)
                 if(type(settings) is dict and len(settings) > 0):
-                    key = next((i for i, item in enumerate(settings["integrations"]) if item["provider"] == integration['provider']), None)
+                    key = next((i for i, item in enumerate(
+                        settings["integrations"]) if item["provider"] == integration['provider']), None)
                     if(key is not None):
                         settings["integrations"][key] = integration
                     else:
@@ -192,7 +181,7 @@ def saveUserIntegration(integration):
             except Exception as ex:
                 print(ex)
     except Exception as ex:
-        print("File could not be open" + ex)
+        print("saveUserIntegration: File could not be open" + ex)
         settings["integrations"] = []
         settings["integrations"].append(integration)
     finally:

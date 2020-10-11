@@ -7,7 +7,7 @@ from PySide2.QtWidgets import (QApplication, QMainWindow, QGridLayout,
 from PySide2.QtGui import QPalette, QColor
 from PySide2.QtCore import Qt
 
-from modules.workspace import RequestWorkspaceWidget
+from modules.requestEditor.requestEditor import RequestEditorWidget
 from modules.requestsList import RequestsList
 from modules.workspaceSettings import WorkspaceSettingsWidget
 from modules.userSettings import UserSettingsWidget
@@ -23,6 +23,29 @@ class RequestsMainWidget(QWidget):
         self._workspacesData = loadWorkspaces()
         self.workspaceId = 0
         self._userData = loadUserData()
+        if(len(self._workspacesData) == 0):
+            self._workspacesData = [
+                {
+                    "id": 0,
+                    "spaceName": "InitialWorkspace",
+                    "integrations": [
+                        {
+                            "integrationType": "wiki",
+                            "data": [
+                                {
+                                    "provider": "gitlab",
+                                    "projectUrl": ""
+                                },
+                                {
+                                    "provider": "github",
+                                    "projectUrl": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "requests": []
+                }
+            ]
         self._requestsData = self._workspacesData[self.workspaceId]["requests"]
         self.selectedRequest = None
 
@@ -50,7 +73,7 @@ class RequestsMainWidget(QWidget):
         self.requestsListLayout.addWidget(self.createNewRequest, 1, 0)
 
         # RIGHT - WORKSPACE LAYOUT
-        self.requestWorkspaceWidget = RequestWorkspaceWidget(self)
+        self.RequestEditorWidget = RequestEditorWidget(self)
 
         # Set general layout
         allQGridLayout = QGridLayout()
@@ -59,7 +82,7 @@ class RequestsMainWidget(QWidget):
         allQGridLayout.addWidget(self.workspaceSettingsWidget, 0, 0)
         allQGridLayout.addWidget(self.userSettingsWidget, 0, 1, Qt.AlignRight)
         allQGridLayout.addLayout(self.requestsListLayout, 1, 0)
-        allQGridLayout.addWidget(self.requestWorkspaceWidget, 1, 1)
+        allQGridLayout.addWidget(self.RequestEditorWidget, 1, 1)
         self.setLayout(allQGridLayout)
 
         # Connections
@@ -70,22 +93,22 @@ class RequestsMainWidget(QWidget):
         # Creating new Request - remove selection
         self.createNewRequest.clicked.connect(self.clearWorkspace)
 
-        # Select last item in list
+        # Select last item in requests list
         self.requestsListWidget.selectRow(len(self._requestsData)-1)
 
     def checkDisableSaveAndDelete(self, s):
-        if (not self.requestWorkspaceWidget.requestName.text() or
-                not self.requestWorkspaceWidget.requestEndpoint.text()):
-            self.requestWorkspaceWidget.saveRequestInList.setEnabled(False)
-            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(False)
+        if (not self.RequestEditorWidget.requestName.text() or
+                not self.RequestEditorWidget.requestEndpoint.text()):
+            self.RequestEditorWidget.saveRequestInList.setEnabled(False)
+            self.RequestEditorWidget.deleteRequestFromList.setEnabled(False)
         else:
-            self.requestWorkspaceWidget.saveRequestInList.setEnabled(True)
-            self.requestWorkspaceWidget.deleteRequestFromList.setEnabled(True)
+            self.RequestEditorWidget.saveRequestInList.setEnabled(True)
+            self.RequestEditorWidget.deleteRequestFromList.setEnabled(True)
 
     def onRowChanged(self, current, previous):
         self.selectedRequest = current.row()
         if(self.selectedRequest != -1):
-            self.requestWorkspaceWidget.saveRequestInList.setText(
+            self.RequestEditorWidget.saveRequestInList.setText(
                 "Update request")
 
             # Update data in workspace
@@ -106,28 +129,28 @@ class RequestsMainWidget(QWidget):
             hour = "0"+str(time.hour) if time.hour < 10 else time.hour
             minute = "0"+str(time.minute) if time.minute < 10 else time.minute
 
-            (self.requestWorkspaceWidget
+            (self.RequestEditorWidget
                 .requestLastModificationDate
                 .setText(f'Saved:  {time.year}/{month}/{day} at {hour}:{minute}'))
 
-            self.requestWorkspaceWidget.requestId = requestId
-            self.requestWorkspaceWidget.requestName.setText(requestName)
-            self.requestWorkspaceWidget.requestType.setCurrentText(requestType)
-            self.requestWorkspaceWidget.requestEndpoint.setText(
+            self.RequestEditorWidget.requestId = requestId
+            self.RequestEditorWidget.requestName.setText(requestName)
+            self.RequestEditorWidget.requestType.setCurrentText(requestType)
+            self.RequestEditorWidget.requestEndpoint.setText(
                 requestEndpoint)
-            self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
+            self.RequestEditorWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
                 requestHeaders)
-            self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setPlainText(
+            self.RequestEditorWidget.RequestAdvancedEditing.requestBody.setPlainText(
                 requestBody)
 
     def saveRequest(self):
         # Current data
-        requestId = self.requestWorkspaceWidget.requestId
-        requestName = self.requestWorkspaceWidget.requestName.text()
-        requestType = self.requestWorkspaceWidget.requestType.currentText()
-        requestEndpoint = self.requestWorkspaceWidget.requestEndpoint.text()
-        requestHeaders = self.requestWorkspaceWidget.RequestAdvancedEditing._headersData
-        requestBody = (self.requestWorkspaceWidget.
+        requestId = self.RequestEditorWidget.requestId
+        requestName = self.RequestEditorWidget.requestName.text()
+        requestType = self.RequestEditorWidget.requestType.currentText()
+        requestEndpoint = self.RequestEditorWidget.requestEndpoint.text()
+        requestHeaders = self.RequestEditorWidget.RequestAdvancedEditing._headersData
+        requestBody = (self.RequestEditorWidget.
                        RequestAdvancedEditing.requestBody.toPlainText())
 
         self.requestDict = {
@@ -138,8 +161,9 @@ class RequestsMainWidget(QWidget):
             "body": requestBody,
         }
 
-        if self.requestWorkspaceWidget.requestId is None:
-            requestId = saveRequestDataToFile(self.requestDict, self.workspaceId)
+        if self.RequestEditorWidget.requestId is None:
+            requestId = saveRequestDataToFile(
+                self.requestDict, self.workspaceId)
             self.requestDict["id"] = requestId
             self._requestsData.append(self.requestDict)
             # Select last item in list
@@ -149,7 +173,7 @@ class RequestsMainWidget(QWidget):
             self.requestDict["id"] = requestId
             saveRequestDataToFile(self.requestDict, self.workspaceId)
             self._requestsData[self.selectedRequest] = self.requestDict
-            (self.requestWorkspaceWidget
+            (self.RequestEditorWidget
              .requestLastModificationDate
              .setText("Just updated"))
             print(f'Updated request with id: {requestId}')
@@ -157,7 +181,8 @@ class RequestsMainWidget(QWidget):
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
 
     def deleteRequest(self):
-        removeRequestFromFile(self.requestWorkspaceWidget.requestId, self.workspaceId)
+        removeRequestFromFile(
+            self.RequestEditorWidget.requestId, self.workspaceId)
         self._requestsData.pop(self.selectedRequest)
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
         print("Deleted request")
@@ -166,20 +191,21 @@ class RequestsMainWidget(QWidget):
     def clearWorkspace(self):
         print("Cleared workspace")
         self.requestsListWidget.clearSelection()
-        self.requestWorkspaceWidget.requestId = None
-        self.requestWorkspaceWidget.requestName.setText("")
-        self.requestWorkspaceWidget.requestLastModificationDate.setText("")
-        self.requestWorkspaceWidget.requestType.setCurrentIndex(0)
-        self.requestWorkspaceWidget.requestEndpoint.setText("")
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestBody.setText(
+        self.RequestEditorWidget.requestId = None
+        self.RequestEditorWidget.requestName.setText("")
+        self.RequestEditorWidget.requestLastModificationDate.setText("")
+        self.RequestEditorWidget.requestType.setCurrentIndex(0)
+        self.RequestEditorWidget.requestEndpoint.setText("")
+        self.RequestEditorWidget.RequestAdvancedEditing.requestBody.setText(
             "")
-        self.requestWorkspaceWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
-            self.requestWorkspaceWidget.defaultRequestHeadersData)
-        self.requestWorkspaceWidget.RequestResponse.responseBody.setText("")
-        self.requestWorkspaceWidget.RequestResponse.responseStatus.setText("")
-        self.requestWorkspaceWidget.saveRequestInList.setText("Save request")
+        self.RequestEditorWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
+            self.RequestEditorWidget.defaultRequestHeadersData)
+        self.RequestEditorWidget.RequestResponse.responseBody.setText("")
+        self.RequestEditorWidget.RequestResponse.responseStatus.setText("")
+        self.RequestEditorWidget.saveRequestInList.setText("Save request")
 
     def changeWorkspace(self, workspaceId):
+        print("Changed workspace - current workspace id: ", workspaceId)
         self.workspaceId = workspaceId
         self._requestsData = self._workspacesData[workspaceId]["requests"]
         if(len(self._requestsData) > 0):
@@ -187,9 +213,9 @@ class RequestsMainWidget(QWidget):
             self.requestsListWidget.requestsListModel.load_data(self._requestsData)
             self.requestsListWidget.selectRow(len(self._requestsData)-1)
         else:
+            self.requestsListWidget.requestsListModel._requestsData = []
             self.requestsListWidget.requestsListModel.load_data([])
             self.clearWorkspace()
-        print(workspaceId)
 
 
 class MainWindow(QMainWindow):

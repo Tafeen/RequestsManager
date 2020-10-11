@@ -213,16 +213,16 @@ class RequestDocumentation(QWidget):
         self.setupLayout()
 
     def setupLayout(self):
-        integration_url = self.parent.parent.parent._workspacesData[self.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
-        integration_workspace_key = self.parent.parent.parent._userData["integrations"][0]["access_token"]
-        if(len(integration_url) > 0 and len(integration_workspace_key) > 0):
-            self.documentationScreen = DocumentationPages(self)
-            self.requestDocumentationLayout.addWidget(self.documentationScreen)
-        else:
-            self.documentationScreen = QPushButton("Connect with gitlab wiki's")
-            self.documentationScreen.clicked.connect(
-                lambda provider: self.Integration("gitlab"))
-            self.requestDocumentationLayout.addWidget(self.documentationScreen)
+        # integration_url = self.parent.parent.parent._workspacesData[self.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
+        # integration_workspace_key = self.parent.parent.parent._userData["integrations"][0]["access_token"]
+        # if(len(integration_url) > 0 and len(integration_workspace_key) > 0):
+        #     self.documentationScreen = DocumentationPages(self)
+        #     self.requestDocumentationLayout.addWidget(self.documentationScreen)
+        # else:
+        #     self.documentationScreen = QPushButton("Connect with gitlab wiki's")
+        #     self.documentationScreen.clicked.connect(
+        #         lambda provider: self.Integration("gitlab"))
+        #     self.requestDocumentationLayout.addWidget(self.documentationScreen)
         self.setLayout(self.requestDocumentationLayout)
         # Update size of layout - specially needed after rebuilding widget
         self.requestDocumentationLayout.setSizeConstraint(QLayout.SetMinimumSize)
