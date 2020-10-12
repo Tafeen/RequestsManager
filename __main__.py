@@ -1,10 +1,11 @@
 #!/usr/bin/env python3.8.3
 import sys
+import logging
 from datetime import datetime, timezone
 
 from PySide2.QtWidgets import (QApplication, QMainWindow, QGridLayout,
                                QWidget, QPushButton)
-from PySide2.QtGui import QPalette, QColor
+from PySide2.QtGui import QPalette, QColor, QFont
 from PySide2.QtCore import Qt
 
 from modules.requestEditor.requestEditor import RequestEditorWidget
@@ -12,6 +13,7 @@ from modules.requestsList import RequestsList
 from modules.workspaceSettings import WorkspaceSettingsWidget
 from modules.userSettings import UserSettingsWidget
 
+from utils.logger import logWidget
 from utils.fileOperations import (saveRequestDataToFile, loadWorkspaces,
                                   removeRequestFromFile, loadUserData)
 
@@ -57,10 +59,20 @@ class RequestsMainWidget(QWidget):
         self.workspaceSettingsWidget.setMaximumWidth(320)
         self.workspaceSettingsWidget.setMaximumHeight(50)
 
-        # TOP RIGHT - user settings
+        # TOP RIGHT
+        self.rightLayout = QGridLayout()
+
+        # user settings
         self.userSettingsWidget = UserSettingsWidget(self)
         self.userSettingsWidget.setMaximumWidth(320)
         self.userSettingsWidget.setMaximumHeight(50)
+        # log dialog
+        self.logWidgetView = logWidget(self)
+        self.logWidgetView.setMaximumWidth(320)
+        self.logWidgetView.setMaximumHeight(50)
+
+        self.rightLayout.addWidget(self.userSettingsWidget, 0, 0)
+        self.rightLayout.addWidget(self.logWidgetView, 0, 1)
 
         # LEFT - LIST LAYOUT
         self.requestsListLayout = QGridLayout()
@@ -80,7 +92,7 @@ class RequestsMainWidget(QWidget):
         allQGridLayout.setColumnStretch(0, 2)
         allQGridLayout.setColumnStretch(1, 5)
         allQGridLayout.addWidget(self.workspaceSettingsWidget, 0, 0)
-        allQGridLayout.addWidget(self.userSettingsWidget, 0, 1, Qt.AlignRight)
+        allQGridLayout.addLayout(self.rightLayout, 0, 1, Qt.AlignRight)
         allQGridLayout.addLayout(self.requestsListLayout, 1, 0)
         allQGridLayout.addWidget(self.RequestEditorWidget, 1, 1)
         self.setLayout(allQGridLayout)
@@ -164,13 +176,12 @@ class RequestsMainWidget(QWidget):
         if self.RequestEditorWidget.requestId is None:
             requestId = saveRequestDataToFile(
                 self.requestDict, self.workspaceId)
-            print(requestId)
             self.requestDict["id"] = requestId
             self._requestsData.append(self.requestDict)
             # Select last item in list
             self.requestsListWidget.selectRow(len(self._requestsData)-1)
             self.RequestEditorWidget.requestId = requestId
-            print(f'Saved request with id: {requestId}')
+            logging.info(f'Saved request with id: {requestId}')
         else:
             self.requestDict["id"] = requestId
             saveRequestDataToFile(self.requestDict, self.workspaceId)
@@ -178,8 +189,7 @@ class RequestsMainWidget(QWidget):
             (self.RequestEditorWidget
              .requestLastModificationDate
              .setText("Just updated"))
-            print(f'Updated request with id: {requestId}')
-        print(f'Ilosc requestow: {len(self._requestsData)}')
+            logging.info(f'Updated request with id: {requestId}')
         self.requestsListWidget.requestsListModel.load_data(self._requestsData)
 
     def deleteRequest(self):
@@ -207,7 +217,6 @@ class RequestsMainWidget(QWidget):
         self.RequestEditorWidget.saveRequestInList.setText("Save request")
 
     def changeWorkspace(self, workspaceId):
-        print("Changed workspace - current workspace id: ", workspaceId)
         self.workspaceId = workspaceId
         self._requestsData = self._workspacesData[workspaceId]["requests"]
         if(len(self._requestsData) > 0):
@@ -245,8 +254,14 @@ if __name__ == "__main__":
     palette.setColor(QPalette.Link, QColor(66, 165, 227))
     palette.setColor(QPalette.Highlight, QColor(0, 76, 117))
     palette.setColor(QPalette.HighlightedText, Qt.black)
+    palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
 
     app.setPalette(palette)
+
+    font = QFont("Helvetica")
+    font.setStyleHint(QFont.Monospace)
+    app.setFont(font)
 
     # QWidget
     widget = RequestsMainWidget()

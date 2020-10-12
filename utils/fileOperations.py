@@ -2,6 +2,7 @@ import json
 import datetime
 import sys
 import os
+import logging
 
 
 def resource_path(relative_path):
@@ -24,9 +25,9 @@ def loadWorkspaces():
             try:
                 workspacesList = json.load(f)
             except Exception as ex:
-                print(ex)
+                logging.error(f'loadWorkspaces: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print(ex)
+        logging.error(f'loadWorkspaces: Could not open file, exception: {ex}')
     finally:
         if type(workspacesList) is list:
             return workspacesList
@@ -53,8 +54,7 @@ def saveWorkspaceDataToFile(workspace):
                 # Workspace is invalid or is empty
                 workspacesList = []
     except Exception as ex:
-        print("saveWorkspaceDataToFile: Could not open file")
-        print(ex)
+        logging.error(f'saveWorkspaceDataToFile: Could not open file, exception: {ex}')
     finally:
         # Save to file
         with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
@@ -88,12 +88,9 @@ def saveRequestDataToFile(request, workspaceId):
                         request_index = next((index for (index, d) in enumerate(requestsList) if d["id"] == request["id"]), None)
                         requestsList[request_index] = request
             except Exception as ex:
-                # file is not json
-                print("saveRequestDataToFile: File is not correct json type")
-                print(ex)
+                logging.error(f'saveRequestDataToFile: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print("saveRequestDataToFile: Could not open file")
-        print(ex)
+        logging.error(f'saveRequestDataToFile: Could not open file, exception: {ex}')
     finally:
         # Save to file
         with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
@@ -112,11 +109,9 @@ def removeRequestFromFile(requestId, workspaceId):
                     filter(lambda i: i['id'] != requestId, requestsList))
                 workspacesList[workspaceId]["requests"] = requestsList
             except Exception as ex:
-                # file is not json
-                print("removeRequestFromFile: File is not correct json type")
-                print(ex)
+                logging.error(f'removeRequestFromFile: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print(ex)
+        logging.error(f'saveRequestDataToFile: Could not open file, exception: {ex}')
     finally:
         with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
@@ -132,11 +127,9 @@ def removeWorkspaceFromFile(workspaceId):
                 workspacesList = list(
                     filter(lambda i: i['id'] != workspaceId, workspacesList))
             except Exception as ex:
-                # file is not json
-                print("removeWorkspaceFromFile: File is not correct json type")
-                print(ex)
+                logging.error(f'removeWorkspaceFromFile: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print(ex)
+        logging.error(f'removeWorkspaceFromFile: Could not open file, exception: {ex}')
     finally:
         with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
@@ -151,9 +144,9 @@ def loadUserData():
             try:
                 userData = json.load(f)
             except Exception as ex:
-                print(ex)
+                logging.error(f'loadUserData: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print(ex)
+        logging.error(f'loadUserData: Could not open file, exception: {ex}')
     finally:
         if type(userData) is dict:
             return userData
@@ -179,9 +172,9 @@ def saveUserIntegration(integration):
                     settings["integrations"] = []
                     settings["integrations"].append(integration)
             except Exception as ex:
-                print(ex)
+                logging.error(f'saveUserIntegration: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print("saveUserIntegration: File could not be open" + ex)
+        logging.error(f'saveUserIntegration: File could not be open, exception: {ex}')
         settings["integrations"] = []
         settings["integrations"].append(integration)
     finally:
@@ -205,9 +198,9 @@ def saveUserWorkspaceToFile(workspace):
                     settings["workspaces"] = []
                     settings["workspaces"].append(workspace)
             except Exception as ex:
-                print(ex)
+                logging.error(f'saveUserWorkspaceToFile: File is not correct json type, exception: {ex}')
     except Exception as ex:
-        print("File could not be open" + ex)
+        logging.error(f'saveUserWorkspaceToFile: File could not be open, exception: {ex}')
         settings["workspaces"] = []
         settings["workspaces"].append(workspace)
     finally:
