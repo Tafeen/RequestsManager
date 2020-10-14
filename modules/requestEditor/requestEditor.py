@@ -7,7 +7,7 @@ from PySide2.QtWidgets import (QHBoxLayout, QLineEdit, QTextEdit,
 from utils.requestWrapper import requestWrapper
 from modules.requestEditor.headersTable import RequestHeadersTable
 from modules.requestEditor.response import RequestsResponseWidget
-from modules.requestEditor.requestDocumentation import RequestDocumentation
+from modules.requestEditor.requestWiki import RequestWiki
 
 
 class RequestAdvancedEditingWidget(QWidget):
@@ -24,12 +24,12 @@ class RequestAdvancedEditingWidget(QWidget):
         self._headersData = parent._headersData
         self.requestHeadersTable = RequestHeadersTable(self)
 
-        # Request Documentation
-        self.requestDocumentation = RequestDocumentation(self)
+        # Request Wiki
+        self.RequestWiki = RequestWiki(self)
 
         self.tabWidget.addTab(self.requestHeadersTable, "Headers")
         self.tabWidget.addTab(self.requestBody, "Body")
-        self.tabWidget.addTab(self.requestDocumentation, "Documentation")
+        self.tabWidget.addTab(self.RequestWiki, "Wiki")
 
         allQGridLayout = QGridLayout()
         allQGridLayout.addWidget(self.tabWidget, 0, 0)

@@ -113,7 +113,7 @@ class IntegrationDetails(QWidget):
                     integrations.append(gitlabIntegrationObj)
                     print("Integration provider =" + self.integrationProvider)
                     self.parent.parent.parent.parent.parent.workspaceSettingsWidget.saveWorkspace(integrations, self.integrationProvider)
-                    self.parent.parent.reloadDocumentation()
+                    self.parent.parent.reloadWiki()
                     # TODO: Save connection to workspace
                     self.SuccessAfterConnection.show()
                     self.SuccessAfterConnection.activateWindow()
@@ -142,14 +142,14 @@ class Integration(QDialog):
         self.setLayout(self.allQGridLayout)
 
 
-class DocumentationPages(QWidget):
+class wikiPages(QWidget):
     def __init__(self, parent, integrationProvider, integrationURL, integrationKEY):
         self.parent = parent
-        super(DocumentationPages, self).__init__(parent)
+        super(wikiPages, self).__init__(parent)
         self.setupLayout(integrationProvider, integrationURL, integrationKEY)
 
     def reloadLayout(self, tf):
-        print("Layout reloaded documentation page")
+        print("Layout reloaded Wiki page")
         if(tf):
             self.lay = QHBoxLayout()
             self.lab = QLabel("Yes")
@@ -214,30 +214,30 @@ class DocumentationPages(QWidget):
             print("This provider is not available yet")
 
 
-class RequestDocumentation(QWidget):
+class RequestWiki(QWidget):
     def __init__(self, parent):
         self.parent = parent
-        super(RequestDocumentation, self).__init__(parent)
-        self.requestDocumentationLayout = QVBoxLayout()
+        super(RequestWiki, self).__init__(parent)
+        self.requestWikiLayout = QVBoxLayout()
         self.setupLayout()
 
     def setupLayout(self):
         # integration_url = self.parent.parent.parent._workspacesData[self.parent.parent.parent.workspaceId]["integrations"]["wiki"][0]["projectUrl"]
         # integration_workspace_key = self.parent.parent.parent._userData["integrations"][0]["access_token"]
         # if(len(integration_url) > 0 and len(integration_workspace_key) > 0):
-        #     self.documentationScreen = DocumentationPages(self)
-        #     self.requestDocumentationLayout.addWidget(self.documentationScreen)
+        #     self.wikiScreen = wikiPages(self)
+        #     self.requestWikiLayout.addWidget(self.wikiScreen)
         # else:
-        #     self.documentationScreen = QPushButton("Connect with gitlab wiki's")
-        #     self.documentationScreen.clicked.connect(
+        #     self.wikiScreen = QPushButton("Connect with gitlab wiki's")
+        #     self.wikiScreen.clicked.connect(
         #         lambda provider: self.Integration("gitlab"))
-        #     self.requestDocumentationLayout.addWidget(self.documentationScreen)
-        self.setLayout(self.requestDocumentationLayout)
+        #     self.requestWikiLayout.addWidget(self.wikiScreen)
+        self.setLayout(self.requestWikiLayout)
         # Update size of layout - specially needed after rebuilding widget
-        self.requestDocumentationLayout.setSizeConstraint(
+        self.requestWikiLayout.setSizeConstraint(
             QLayout.SetMinimumSize)
 
-    def reloadDocumentation(self):
+    def reloadWiki(self):
         self.setupLayout()
 
     def closeIntegrationSetup(self):

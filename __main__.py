@@ -25,29 +25,6 @@ class RequestsMainWidget(QWidget):
         self._workspacesData = loadWorkspaces()
         self.workspaceId = 0
         self._userData = loadUserData()
-        if(len(self._workspacesData) == 0):
-            self._workspacesData = [
-                {
-                    "id": 0,
-                    "spaceName": "InitialWorkspace",
-                    "integrations": [
-                        {
-                            "integrationType": "wiki",
-                            "data": [
-                                {
-                                    "provider": "gitlab",
-                                    "projectUrl": ""
-                                },
-                                {
-                                    "provider": "github",
-                                    "projectUrl": ""
-                                }
-                            ]
-                        }
-                    ],
-                    "requests": []
-                }
-            ]
         self._requestsData = self._workspacesData[self.workspaceId]["requests"]
         self.selectedRequest = None
 
@@ -119,41 +96,44 @@ class RequestsMainWidget(QWidget):
 
     def onRowChanged(self, current, previous):
         self.selectedRequest = current.row()
+        print("Row Changed in requests list")
         if(self.selectedRequest != -1):
-            self.RequestEditorWidget.saveRequestInList.setText(
+            self.updateDataInEditor()
+
+    def updateDataInEditor(self):
+        self.RequestEditorWidget.saveRequestInList.setText(
                 "Update request")
+        # Update data in workspace
+        requestId = self._requestsData[self.selectedRequest]["id"]
+        requestName = self._requestsData[self.selectedRequest]["name"]
+        requestType = self._requestsData[self.selectedRequest]["type"]
+        requestEndpoint = self._requestsData[self.selectedRequest]["endpoint"]
+        requestHeaders = self._requestsData[self.selectedRequest]["headers"]
+        requestBody = self._requestsData[self.selectedRequest]["body"]
 
-            # Update data in workspace
-            requestId = self._requestsData[self.selectedRequest]["id"]
-            requestName = self._requestsData[self.selectedRequest]["name"]
-            requestType = self._requestsData[self.selectedRequest]["type"]
-            requestEndpoint = self._requestsData[self.selectedRequest]["endpoint"]
-            requestHeaders = self._requestsData[self.selectedRequest]["headers"]
-            requestBody = self._requestsData[self.selectedRequest]["body"]
+        # Format UTC data to locale
+        timeUTC = datetime.strptime(
+            self._requestsData[self.selectedRequest]["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
+        time = timeUTC.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
-            # Format UTC data to locale
-            timeUTC = datetime.strptime(
-                self._requestsData[self.selectedRequest]["lastModificationDate"], '%Y-%m-%dT%H:%M:%SZ')
-            time = timeUTC.replace(tzinfo=timezone.utc).astimezone(tz=None)
+        month = "0"+str(time.month) if time.month < 10 else time.month
+        day = "0"+str(time.day) if time.day < 10 else time.day
+        hour = "0"+str(time.hour) if time.hour < 10 else time.hour
+        minute = "0"+str(time.minute) if time.minute < 10 else time.minute
 
-            month = "0"+str(time.month) if time.month < 10 else time.month
-            day = "0"+str(time.day) if time.day < 10 else time.day
-            hour = "0"+str(time.hour) if time.hour < 10 else time.hour
-            minute = "0"+str(time.minute) if time.minute < 10 else time.minute
+        (self.RequestEditorWidget
+            .requestLastModificationDate
+            .setText(f'Saved:  {time.year}/{month}/{day} at {hour}:{minute}'))
 
-            (self.RequestEditorWidget
-                .requestLastModificationDate
-                .setText(f'Saved:  {time.year}/{month}/{day} at {hour}:{minute}'))
-
-            self.RequestEditorWidget.requestId = requestId
-            self.RequestEditorWidget.requestName.setText(requestName)
-            self.RequestEditorWidget.requestType.setCurrentText(requestType)
-            self.RequestEditorWidget.requestEndpoint.setText(
-                requestEndpoint)
-            self.RequestEditorWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
-                requestHeaders)
-            self.RequestEditorWidget.RequestAdvancedEditing.requestBody.setPlainText(
-                requestBody)
+        self.RequestEditorWidget.requestId = requestId
+        self.RequestEditorWidget.requestName.setText(requestName)
+        self.RequestEditorWidget.requestType.setCurrentText(requestType)
+        self.RequestEditorWidget.requestEndpoint.setText(
+            requestEndpoint)
+        self.RequestEditorWidget.RequestAdvancedEditing.requestHeadersTable.requestHeadersModel.load_data(
+            requestHeaders)
+        self.RequestEditorWidget.RequestAdvancedEditing.requestBody.setPlainText(
+            requestBody)
 
     def saveRequest(self):
         # Current data
@@ -217,12 +197,15 @@ class RequestsMainWidget(QWidget):
         self.RequestEditorWidget.saveRequestInList.setText("Save request")
 
     def changeWorkspace(self, workspaceId):
+        print("Changing workspace")
         self.workspaceId = workspaceId
         self._requestsData = self._workspacesData[workspaceId]["requests"]
         if(len(self._requestsData) > 0):
             self.requestsListWidget.requestsListModel._requestsData = self._requestsData
             self.requestsListWidget.requestsListModel.load_data(self._requestsData)
             self.requestsListWidget.selectRow(len(self._requestsData)-1)
+            # Even if both workspaces have same number of rows update data, not basing on if row changed
+            self.updateDataInEditor()
         else:
             self.requestsListWidget.requestsListModel._requestsData = []
             self.requestsListWidget.requestsListModel.load_data([])
@@ -243,7 +226,9 @@ if __name__ == "__main__":
     # Qt Application
     app = QApplication(sys.argv)
 
+    # Set default style and add colors
     app.setStyle("Fusion")
+
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(41, 41, 41))
     palette.setColor(QPalette.WindowText, Qt.white)
@@ -259,9 +244,22 @@ if __name__ == "__main__":
 
     app.setPalette(palette)
 
+    # Set font
     font = QFont("Helvetica")
     font.setStyleHint(QFont.Monospace)
+    font.setPixelSize(13)
     app.setFont(font)
+
+    # Remove context help btn
+    app.setAttribute(Qt.AA_DisableWindowContextHelpButton)
+
+    # Set file logger
+    fh = logging.FileHandler('requestsManagerLogs.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(
+        logging.Formatter(
+            '%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s'))
+    logging.getLogger().addHandler(fh)
 
     # QWidget
     widget = RequestsMainWidget()
