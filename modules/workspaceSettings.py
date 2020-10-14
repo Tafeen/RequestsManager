@@ -80,7 +80,9 @@ class WorksapceDropDialog(QDialog):
             self.mainParent._workspacesData = list(filter(lambda i: i['id'] != workspaceIdToRemove, self.mainParent._workspacesData))
             removeWorkspaceFromFile(workspaceIdToRemove)
             # Change current workspace to workspace with greatest id
-            self.mainParent.changeWorkspace(max(workspace["id"] for workspace in self.mainParent._workspacesData))
+            workspaceMaxId = max(workspace["id"] for workspace in self.mainParent._workspacesData)
+            workspaceMaxIndex = next((i for i, item in enumerate(self.mainParent._workspacesData) if item["id"] == workspaceMaxId), None)
+            self.mainParent.changeWorkspace(workspaceMaxIndex)
             # Update comboBox
             self.parent.parent.reloadAllWorkspaces()
             # Close all dialog windows

@@ -196,10 +196,9 @@ class RequestsMainWidget(QWidget):
         self.RequestEditorWidget.RequestResponse.responseStatus.setText("")
         self.RequestEditorWidget.saveRequestInList.setText("Save request")
 
-    def changeWorkspace(self, workspaceId):
-        print("Changing workspace")
-        self.workspaceId = workspaceId
-        self._requestsData = self._workspacesData[workspaceId]["requests"]
+    def changeWorkspace(self, workspaceIndex):
+        self.workspaceId = workspaceIndex
+        self._requestsData = self._workspacesData[workspaceIndex]["requests"]
         if(len(self._requestsData) > 0):
             self.requestsListWidget.requestsListModel._requestsData = self._requestsData
             self.requestsListWidget.requestsListModel.load_data(self._requestsData)
@@ -210,7 +209,6 @@ class RequestsMainWidget(QWidget):
             self.requestsListWidget.requestsListModel._requestsData = []
             self.requestsListWidget.requestsListModel.load_data([])
             self.clearWorkspace()
-        print(workspaceId)
         # self.requestWorkspaceWidget.RequestAdvancedEditing.requestDocumentation.reloadDocumentation()   
 
 
