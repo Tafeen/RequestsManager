@@ -16,6 +16,8 @@ def resource_path(relative_path):
     # base_path = ""
     return os.path.join(base_path, relative_path)
 
+# Workspaces
+
 
 def loadWorkspaces():
     workspacesList = []
@@ -77,7 +79,6 @@ def saveWorkspaceDataToFile(workspace):
                     workspace["id"] = lastId + 1
                     workspacesList.append(workspace)
             else:
-                # Workspace is invalid or is empty
                 workspacesList = []
                 workspacesList.append(workspace)
     except Exception as ex:
@@ -92,6 +93,28 @@ def saveWorkspaceDataToFile(workspace):
         return(workspace["id"])
 
 
+def removeWorkspaceFromFile(workspaceId):
+    workspacesList = []
+    try:
+        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
+            try:
+                workspacesList = json.load(f)
+                workspacesList = list(
+                    filter(lambda i: i['id'] != workspaceId, workspacesList))
+            except Exception as ex:
+                logging.error(
+                    f'File is not correct json type, exception: {ex}')
+    except Exception as ex:
+        logging.error(
+            f'Could not open file, exception: {ex}')
+    finally:
+        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
+            json.dump(workspacesList, f, ensure_ascii=False, indent=4)
+        return workspacesList
+
+
+# Requests
+
 def saveRequestDataToFile(request, workspaceId):
     workspacesList = []
     requestsList = []
@@ -101,9 +124,7 @@ def saveRequestDataToFile(request, workspaceId):
         with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
             try:
                 workspacesList = json.load(f)
-                # Check if workspaces are list
                 if(type(workspacesList) is list and len(workspacesList) > 0):
-                    # Check if requests are list
                     requestsList = workspacesList[workspaceId]["requests"]
                     if(type(requestsList) is list and len(requestsList) > 0):
                         if("id" in request):
@@ -130,7 +151,6 @@ def saveRequestDataToFile(request, workspaceId):
         logging.error(
             f'Could not open file, exception: {ex}')
     finally:
-        # Save to file
         with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
             json.dump(workspacesList, f, ensure_ascii=False, indent=4)
         return(request["id"])
@@ -158,29 +178,9 @@ def removeRequestFromFile(requestId, workspaceId):
         return requestsList
 
 
-def removeWorkspaceFromFile(workspaceId):
-    workspacesList = []
-    try:
-        with open(resource_path("requests.json"), 'r', encoding='utf-8') as f:
-            try:
-                workspacesList = json.load(f)
-                workspacesList = list(
-                    filter(lambda i: i['id'] != workspaceId, workspacesList))
-            except Exception as ex:
-                logging.error(
-                    f'File is not correct json type, exception: {ex}')
-    except Exception as ex:
-        logging.error(
-            f'Could not open file, exception: {ex}')
-    finally:
-        with open(resource_path("requests.json"), 'w', encoding='utf-8') as f:
-            json.dump(workspacesList, f, ensure_ascii=False, indent=4)
-        return workspacesList
-
+# User settings
 
 def loadUserData():
-    userData = {}
-    # Check if file exists and is array
     try:
         with open(resource_path("userSettings.json"), 'r', encoding='utf-8') as f:
             try:
@@ -188,43 +188,81 @@ def loadUserData():
             except Exception as ex:
                 logging.error(
                     f'File is not correct json type, exception: {ex}')
+                saveInitialUserDataToFile()
+                loadUserData()    
     except Exception as ex:
         logging.error(f'Could not open file, exception: {ex}')
+        saveInitialUserDataToFile()
+        loadUserData()
     finally:
-        if type(userData) is dict:
+        if userData:
             return userData
-        else:
-            return {}
 
 
-def saveUserIntegration(integration):
-    settings = {}
+def saveInitialUserDataToFile():
+    userData = {
+        "integrations":
+        [
+            {
+                "integrationType": "wiki",
+                "data":
+                [
+                    {
+                        "provider": "gitlab",
+                        "token": "tokenGITLAB"
+                    },
+                    {
+                        "provider": "github",
+                        "token": "tokenGITHUB"
+                    }
+                ]
+            }
+        ],
+        "workspaces":
+        [
+            {
+                "id": 0,
+                "integrations":
+                [
+                    {
+                        "integrationType": "wiki",
+                        "data": {
+                            "selectedProvider": "gitlab"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    with open(resource_path("userSettings.json"), 'w', encoding='utf-8') as f:
+        json.dump(userData, f, ensure_ascii=False, indent=4)
+
+
+def saveUserIntegrationToFile(integration):
     try:
         with open(resource_path("userSettings.json"), 'r', encoding='utf-8') as f:
             try:
                 settings = json.load(f)
-                if(type(settings) is dict and len(settings) > 0):
-                    key = next((i for i, item in enumerate(
-                        settings["integrations"]) if item["provider"] == integration['provider']), None)
-                    if(key is not None):
-                        settings["integrations"][key] = integration
-                    else:
-                        settings["integrations"].append(integration)
+                key = next((i for i, item in enumerate(
+                    settings["integrations"]) if item["integrationType"] == integration['integrationType']), None)
+                if(key is not None):
+                    settings["integrations"][key] = integration
                 else:
-                    settings = {}
-                    settings["integrations"] = []
                     settings["integrations"].append(integration)
             except Exception as ex:
                 logging.error(
                     f'File is not correct json type, exception: {ex}')
+                saveInitialUserDataToFile()
     except Exception as ex:
         logging.error(
             f'File could not be open, exception: {ex}')
-        settings["integrations"] = []
-        settings["integrations"].append(integration)
+        saveInitialUserDataToFile()
     finally:
-        with open(resource_path("userSettings.json"), 'w', encoding='utf-8') as f:
-            json.dump(settings, f, ensure_ascii=False, indent=4)
+        if settings:
+            with open(resource_path("userSettings.json"), 'w', encoding='utf-8') as f:
+                json.dump(settings, f, ensure_ascii=False, indent=4)
+        else:
+            saveInitialUserDataToFile()
 
 
 def saveUserWorkspaceToFile(workspace):
@@ -238,6 +276,7 @@ def saveUserWorkspaceToFile(workspace):
                         settings["workspaces"]) if item["id"] == workspace['id']), None)
                     if(key is not None):
                         settings["workspaces"][key] = workspace
+                        print(workspace)
                     else:
                         settings["workspaces"].append(workspace)
                 else:
@@ -255,3 +294,4 @@ def saveUserWorkspaceToFile(workspace):
     finally:
         with open(resource_path("userSettings.json"), 'w', encoding='utf-8') as f:
             json.dump(settings, f, ensure_ascii=False, indent=4)
+        print(settings)

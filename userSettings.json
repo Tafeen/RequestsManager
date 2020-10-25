@@ -1,0 +1,30 @@
+{
+    "integrations": [
+        {
+            "integrationType": "wiki",
+            "data": [
+                {
+                    "provider": "gitlab",
+                    "token": "APQ2bsa13VVTK-oG86e3"
+                },
+                {
+                    "provider": "github",
+                    "token": "tokenGITHUB"
+                }
+            ]
+        }
+    ],
+    "workspaces": [
+        {
+            "id": 0,
+            "integrations": [
+                {
+                    "integrationType": "wiki",
+                    "data": {
+                        "selectedProvider": "gitlab"
+                    }
+                }
+            ]
+        }
+    ]
+}
